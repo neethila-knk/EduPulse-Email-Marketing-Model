@@ -1,0 +1,33 @@
+@import "tailwindcss";
+body,
+html {
+  font-family: "Inter", sans-serif;
+}
+
+:root {
+  --color-green: #157F1F;
+  --color-light: #F2F4F3;
+  --color-dark: #232c33;
+  --color-yellow: #F9A620;
+  --color-red: #CC2936;
+}
+
+.color-dark {
+  color: var(--color-dark);
+}
+
+.color-green {
+  color: var(--color-green);
+}
+
+.color-light {
+  color: var(--color-light);
+}
+
+.color-yellow {
+  color: var(--color-yellow);
+}
+
+.color-red {
+  color: var(--color-red);
+}
