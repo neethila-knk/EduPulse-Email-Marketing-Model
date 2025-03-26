@@ -4,30 +4,109 @@ html {
   font-family: "Inter", sans-serif;
 }
 
-:root {
-  --color-green: #157F1F;
+@theme {
+  --color-green: #157f1f;
   --color-light: #F2F4F3;
   --color-dark: #232c33;
   --color-yellow: #F9A620;
   --color-red: #CC2936;
 }
 
-.color-dark {
-  color: var(--color-dark);
+/* Button animations */
+@keyframes ripple {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
 }
 
-.color-green {
-  color: var(--color-green);
+.animate-ripple {
+  animation: ripple 600ms linear;
 }
 
-.color-light {
-  color: var(--color-light);
+.hover-lift {
+  transition: all 300ms;
 }
 
-.color-yellow {
-  color: var(--color-yellow);
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.color-red {
-  color: var(--color-red);
+.hover-lift:active {
+  transform: translateY(0);
+  transform: scale(0.98);
+}
+
+.button-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.button-shadow:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* user profile style */
+.hover-lift-noShadow {
+  transition: all 300ms;
+}
+
+.hover-lift-noShadow:hover {
+  transform: translateY(-2px);
+}
+
+.hover-lift-noShadow:active {
+  transform: translateY(0);
+  transform: scale(0.98);
+}
+
+
+/* Dropdown animations - add these to your index.css file */
+@keyframes dropdownShow {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dropdownHide {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.dropdown-animate-open {
+  animation: dropdownShow 0.3s ease forwards;
+}
+
+.dropdown-animate-close {
+  animation: dropdownHide 0.3s ease forwards;
+}
+
+/* Expanded hover area for dropdown trigger */
+.dropdown-trigger-area {
+  position: relative;
+}
+
+.dropdown-trigger-area::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  bottom: -10px;
+  left: -10px;
+  z-index: -1;
 }
