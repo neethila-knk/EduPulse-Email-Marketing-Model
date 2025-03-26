@@ -1,4 +1,4 @@
-import logoWhite from "../assets/logowhite.png";
+import logoWhite from "../../assets/logowhite.png";
 
 interface AuthLayoutProps {
   children: React.ReactNode;

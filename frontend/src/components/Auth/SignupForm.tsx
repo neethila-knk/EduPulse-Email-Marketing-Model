@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { register, googleAuthUrl } from "../utils/authUtils";
+import { register, googleAuthUrl } from "../../utils/authUtils";
 
 const SignupForm: React.FC = () => {
   const [formData, setFormData] = useState({
