@@ -5,6 +5,7 @@ import Layout from '../components/Layout/Layout';
 import Button from '../components/UI/Button';
 import { Campaign } from '../types';
 import PageHeader from '../components/Layout/PageHeader';
+import overlayImage from "../assets/elements.svg";
 
 interface User {
   id: string;
@@ -143,6 +144,7 @@ const CampaignsPage: React.FC = () => {
               Create New Campaign
             </Button>
           }
+          overlayImage={overlayImage}
         />
         
         {/* Content area - Proper spacing with padding instead of negative margin */}

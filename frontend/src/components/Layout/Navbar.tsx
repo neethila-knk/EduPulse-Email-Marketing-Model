@@ -9,6 +9,7 @@ interface NavbarProps {
     username: string;
     email: string;
     provider: string;
+    profileImage?: string; // Add profileImage property
   } | null;
   onLogout?: () => void;
 }
@@ -97,6 +98,66 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
     };
   }, [dropdownVisible]);
 
+  // Function to render user avatar (profile image or default icon)
+  const renderUserAvatar = (size: 'small' | 'large') => {
+    const hasProfileImage = user && user.profileImage;
+    const sizeClasses = size === 'small' ? 'w-10 h-10' : 'w-12 h-12';
+    const iconSize = size === 'small' ? 'w-6 h-6' : 'w-7 h-7';
+    
+    if (hasProfileImage) {
+      return (
+        <div className={`${sizeClasses} rounded-full overflow-hidden`}>
+          <img 
+            src={user.profileImage} 
+            alt={`${user.username}'s profile`} 
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              // Fallback to default icon if image fails to load
+              (e.target as HTMLImageElement).style.display = 'none';
+              (e.currentTarget.parentNode as HTMLElement).classList.add('bg-gray-200');
+              (e.currentTarget.parentNode as HTMLElement).innerHTML = `
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="${iconSize} text-gray-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              `;
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // Default icon if no profile image
+    return (
+      <div className={`${sizeClasses} rounded-full bg-gray-200 flex items-center justify-center`}>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className={`${iconSize} text-gray-600`}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          />
+        </svg>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white shadow-sm border-b border-gray-200 w-full px-4 py-3 flex items-center justify-between">
       <div className="w-64">
@@ -134,23 +195,11 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         >
           <button 
             className="flex items-center focus:outline-none"
-            onClick={toggleDropdown} // Add click handler as well for more reliability
+            onClick={toggleDropdown}
           >
-            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-2">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-6 h-6 text-gray-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
+            {/* Using the renderUserAvatar function for the small avatar */}
+            <div className="mr-2">
+              {renderUserAvatar('small')}
             </div>
           </button>
           
@@ -159,7 +208,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               className={`absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50 ${
                 isClosing ? 'dropdown-animate-close' : 'dropdown-animate-open'
               }`}
-              onMouseEnter={handleMouseEnter} // Important: also handle hover on the dropdown itself
+              onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
             >
               {user && (
@@ -174,22 +223,11 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                     </svg>
                   </button>
                   
-                  <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-3 mt-2 flex-shrink-0">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-7 h-7 text-gray-600"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
+                  {/* Using the renderUserAvatar function for the large avatar */}
+                  <div className="mr-3 mt-2 flex-shrink-0">
+                    {renderUserAvatar('large')}
                   </div>
+                  
                   <div className="flex-1 min-w-0 pt-4">
                     <p className="text-sm font-medium text-gray-700 truncate">{user.username}</p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>

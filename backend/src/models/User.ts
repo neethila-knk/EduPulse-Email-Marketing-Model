@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, // Not required for OAuth users
+  profileImage: { type: String }, // URL to profile image
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   refreshToken: String,
@@ -21,12 +22,17 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
-  picture: String,
+  picture: String, // From OAuth provider (will be used as profileImage if no custom image)
   firstName: String,
   lastName: String,
   isVerified: { type: Boolean, default: false }
 }, {
   timestamps: true
+});
+
+// Virtual property to get profile image (custom or from provider)
+UserSchema.virtual('displayImage').get(function() {
+  return this.profileImage || this.picture || null;
 });
 
 // Hash password before saving
@@ -54,6 +60,7 @@ interface UserDocument extends mongoose.Document {
   username: string;
   email: string;
   password?: string;
+  profileImage?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   refreshToken?: string;
@@ -64,6 +71,7 @@ interface UserDocument extends mongoose.Document {
   firstName?: string;
   lastName?: string;
   isVerified: boolean;
+  displayImage?: string;
 }
 
 // Create and export the model with type information

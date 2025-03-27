@@ -6,6 +6,7 @@ interface ProfileImageProps {
   onChange: (file: File | null) => void;
   onRemove: () => void;
   className?: string;
+  disabled?: boolean;
 }
 
 const ProfileImage: React.FC<ProfileImageProps> = ({
@@ -13,6 +14,7 @@ const ProfileImage: React.FC<ProfileImageProps> = ({
   onChange,
   onRemove,
   className = '',
+  disabled = false, 
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(initialImage);
   const fileInputRef = useRef<HTMLInputElement>(null);
