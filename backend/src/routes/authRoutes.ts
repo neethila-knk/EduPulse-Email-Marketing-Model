@@ -7,6 +7,7 @@ import {
   verifyRefreshToken,
   generateAccessToken,
 } from "../utils/jwtUtils";
+import axios from "axios";
 import { authenticateJWT } from "../middleware/authMiddleware";
 import { Document } from "mongoose";
 
@@ -18,6 +19,10 @@ interface UserDocument extends Document {
   email: string;
   password?: string;
   refreshToken?: string;
+  googleTokens?: {
+    accessToken?: string;
+    refreshToken?: string;
+  };
   [key: string]: any; // Allow other properties
 }
 
@@ -27,9 +32,17 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     const { username, email, password } = req.body;
 
     // Check if the email is already registered
-    const existingEmail = await User.findOne({ email });
-    if (existingEmail) {
-      res.status(400).json({ message: "Email is already registered" });
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      // Check if the existing user is from an OAuth provider
+      if (existingUser.provider !== 'local') {
+        res.status(400).json({ 
+          message: `This email is already registered with ${existingUser.provider}. Please sign in with ${existingUser.provider} instead.` 
+        });
+      } else {
+        // Generic message for security (don't reveal if local account exists)
+        res.status(400).json({ message: "Email is already registered" });
+      }
       return;
     }
 
@@ -67,58 +80,96 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error) {
-    res.status(400).json({ error });
+    console.error("Registration error:", error);
+    res.status(400).json({ error: "Registration failed" });
   }
 });
 
 // Login route
-router.post("/login", (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate("local", (err: any, user: any, info: any) => {
-    if (err) {
-      return next(err);
-    }
-    if (!user) {
-      return res.status(401).json({ message: info.message || "Login failed" });
-    }
+router.post("/login", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    // Validate inputs
+    const { email, password } = req.body;
 
-    // Generate JWT tokens
-    const tokens = generateTokens(user);
-
-    // Store refresh token in database
-    User.findByIdAndUpdate(user._id, { refreshToken: tokens.refreshToken })
-      .then(() => {
-        // Log in user (session-based auth, optional)
-        req.logIn(user, (err) => {
-          if (err) {
-            return next(err);
-          }
-
-          // Set session expiration if using sessions alongside JWT
-          if (req.body.rememberMe) {
-            req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
-          } else {
-            req.session.cookie.expires = undefined; // Session cookie
-          }
-
-          // Return user info and tokens
-          return res.json({
-            message: "Login successful",
-            ...tokens,
-            user: {
-              id: user._id,
-              username: user.username,
-              email: user.email,
-              provider: user.provider,
-            },
-          });
-        });
-      })
-      .catch((err) => {
-        return res
-          .status(500)
-          .json({ message: "Error saving refresh token", error: err });
+    if (!email || !password) {
+      res.status(400).json({
+        message: "Email and password are required",
+        errors: {
+          email: !email ? "Email is required" : undefined,
+          password: !password ? "Password is required" : undefined,
+        },
       });
-  })(req, res, next);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({
+        message: "Invalid email format",
+        errors: {
+          email: "Please enter a valid email address",
+        },
+      });
+      return;
+    }
+
+    passport.authenticate("local", async (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Authentication error:", err);
+        res.status(500).json({ message: "Authentication error occurred" });
+        return;
+      }
+
+      if (!user) {
+        // Enhanced error message handling
+        let errorMessage = "Invalid credentials";
+        let errorField = "email"; // Default error field
+
+        if (info) {
+          if (info.message.includes("not found")) {
+            errorMessage = "No account found with this email address";
+          } else if (info.message.includes("password")) {
+            errorMessage = "Incorrect password";
+            errorField = "password";
+          } else if (info.message.includes("blocked") || info.message.includes("locked")) {
+            errorMessage =
+              "Account is locked. Please reset your password or contact support.";
+          }
+        }
+
+        res.status(401).json({
+          message: errorMessage,
+          errors: {
+            [errorField]: errorMessage,
+          },
+        });
+        return;
+      }
+
+      // Generate JWT tokens
+      const tokens = generateTokens(user);
+
+      try {
+        // Store refresh token in database and record login time
+        await User.findByIdAndUpdate(user._id, {
+          refreshToken: tokens.refreshToken,
+          lastLogin: new Date(),
+        });
+
+        res.status(200).json({
+          message: "Login successful",
+          ...tokens,
+        });
+      } catch (err) {
+        console.error("Token save error:", err);
+        res.status(500).json({ message: "Error saving authentication token" });
+      }
+    })(req, res, next);
+  } catch (error) {
+    console.error("Unexpected error during login:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // Logout route
@@ -127,23 +178,57 @@ router.get(
   authenticateJWT,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Invalidate refresh token
       if (req.user) {
-        // Type assertion to access _id safely
-        const userId = (req.user as UserDocument)._id;
-        await User.findByIdAndUpdate(userId, { refreshToken: null });
+        const user = req.user as UserDocument;
+
+        // Revoke Google OAuth token if present
+        if (user.provider === 'google' && user.googleTokens?.accessToken) {
+          try {
+            // Attempt to revoke the Google token
+            await axios.post(`https://oauth2.googleapis.com/revoke?token=${user.googleTokens.accessToken}`, {}, {
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              }
+            });
+            console.log('Google token revoked successfully');
+          } catch (error) {
+            console.error('Error revoking Google token:', error);
+            // Continue with logout even if token revocation fails
+          }
+        }
+
+        // Clear tokens in the database
+        await User.findByIdAndUpdate(user._id, { 
+          refreshToken: null,
+          'googleTokens.accessToken': null,
+          'googleTokens.refreshToken': null
+        });
       }
 
-      // For session-based auth (optional)
-      req.logout((err) => {
-        if (err) return next(err);
+      // Clear session
+      if (req.session) {
+        req.session.destroy((err) => {
+          if (err) {
+            console.error("Session destruction error:", err);
+            return res.status(500).json({ message: "Error during logout", error: err });
+          }
+          
+          // Clear all cookies
+          res.clearCookie('connect.sid');
+          
+          return res.json({ message: "Logged out successfully" });
+        });
+      } else {
+        // If no session exists
         res.json({ message: "Logged out successfully" });
-      });
+      }
     } catch (error) {
+      console.error("Logout error:", error);
       res.status(500).json({ message: "Error during logout", error });
     }
   }
 );
+
 
 // Refresh token route
 router.post(
@@ -205,7 +290,7 @@ router.get(
           username: user.username,
           email: user.email,
           provider: user.provider,
-          profileImage: user.profileImage || user.picture || null,
+          profileImage: user.profileImage || null,
         },
       });
     } catch (error) {
@@ -254,7 +339,7 @@ router.post(
         "123 Education Lane, Suite 100, San Francisco, CA 94107";
       const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_USER;
 
-      // Create a professional HTML email
+      // Create email content (HTML and text versions)
       const htmlEmail = `
     <!DOCTYPE html>
     <html lang="en">
@@ -455,6 +540,8 @@ For support inquiries: ${supportEmail}
     }
   }
 );
+
+// Reset password with token
 router.post(
   "/reset-password/:token",
   async (req: Request, res: Response): Promise<void> => {
@@ -488,36 +575,80 @@ router.post(
 // Google OAuth Routes
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"] })
-);
-
-router.get(
-  "/google/callback",
-  passport.authenticate("google", {
-    session: false,
-    failureRedirect: "/login",
-  }),
-  (req: Request, res: Response) => {
-    // Generate JWT tokens for OAuth user
-    const tokens = generateTokens(req.user as UserDocument);
-
-    // Store refresh token
-    User.findByIdAndUpdate((req.user as UserDocument)._id, {
-      refreshToken: tokens.refreshToken,
-    })
-      .then(() => {
-        // Redirect to frontend with tokens
-        const redirectUrl = `${
-          process.env.FRONTEND_URL || "http://localhost:5173"
-        }/oauth-success?accessToken=${tokens.accessToken}&refreshToken=${
-          tokens.refreshToken
-        }`;
-        res.redirect(redirectUrl);
-      })
-      .catch((err) => {
-        res.redirect("/login?error=internal");
-      });
+  (req, res, next) => {
+    // Clear any existing Google session cookies if possible
+    try {
+      res.clearCookie('G_AUTHUSER_H');
+      res.clearCookie('G_ENABLED_IDPS');
+    } catch (e) {
+      console.log('Note: Could not clear Google cookies');
+    }
+    
+    // This is where we pass the prompt and accessType parameters
+    passport.authenticate("google", {
+      scope: ["profile", "email"],
+      // These are passed as authentication options, not in the strategy constructor
+      prompt: "select_account",
+      accessType: "offline"
+    })(req, res, next);
   }
 );
+
+// Google OAuth callback route
+router.get(
+  "/google/callback",
+  (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("google", {
+      session: false,
+      failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=oauth_failed`,
+    }, (err, user, info) => {
+      // Handle authentication errors
+      if (err) {
+        console.error("OAuth error:", err);
+        
+        // Redirect to frontend with specific error message
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+        
+        // Check for specific error messages
+        if (err.message && err.message.includes("already registered")) {
+          // Encode the error message to include in the URL
+          const encodedMessage = encodeURIComponent(err.message);
+          return res.redirect(`${frontendUrl}/login?error=email_exists&message=${encodedMessage}`);
+        }
+        
+        // Generic OAuth failure
+        return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+      }
+      
+      if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=no_user`);
+      }
+      
+      // Proceed with successful authentication
+      // Generate JWT tokens for OAuth user
+      const tokens = generateTokens(user);
+
+      // Store refresh token
+      User.findByIdAndUpdate(user._id, {
+        refreshToken: tokens.refreshToken,
+        lastLogin: new Date(),
+      })
+        .then(() => {
+          // Redirect to frontend with tokens
+          const redirectUrl = `${
+            process.env.FRONTEND_URL || "http://localhost:5173"
+          }/oauth-success?accessToken=${tokens.accessToken}&refreshToken=${
+            tokens.refreshToken
+          }`;
+          res.redirect(redirectUrl);
+        })
+        .catch((err) => {
+          console.error("Error storing refresh token:", err);
+          res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=internal`);
+        });
+    })(req, res, next);
+  }
+);
+
 
 export default router;

@@ -4,58 +4,160 @@ import { login, googleAuthUrl } from "../../utils/authUtils";
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [generalError, setGeneralError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // For debugging
+  useEffect(() => {
+    console.log("Current errors:", errors);
+  }, [errors]);
+
   // Dynamically update the title when the component mounts
   useEffect(() => {
     document.title = "Login | EduPulse";
-    
+  
     // Check for messages passed via location state
     if (location.state && (location.state as any).message) {
-      setError((location.state as any).message);
+      setGeneralError((location.state as any).message);
       
-      // Clear the location state after showing the message
-      window.history.replaceState({}, document.title);
+      // Use React Router's navigate function to clear the state
+      navigate(location.pathname, { replace: true });
     }
     
-    // Check for query params
+    // Enhanced error handling for query params
     const params = new URLSearchParams(location.search);
     if (params.get('error')) {
-      setError(params.get('error') === 'auth_failed' 
-        ? 'Authentication failed. Please try again.' 
-        : params.get('error') === 'expired'
-          ? 'Your session has expired. Please log in again.'
-          : 'An error occurred. Please try again.');
+      const errorType = params.get('error');
+      const errorMessage = params.get('message');
+      
+      // Handle specific error types
+      switch(errorType) {
+        case 'email_exists':
+          setGeneralError(errorMessage || 
+            'This email is already registered with a different login method. Please use the correct login method.');
+          break;
+        case 'auth_failed':
+          setGeneralError('Authentication failed. Please try again.');
+          break;
+        case 'expired':
+          setGeneralError('Your session has expired. Please log in again.');
+          break;
+        case 'oauth_failed':
+          setGeneralError('Google sign-in failed. Please try again or use email/password login.');
+          break;
+        case 'no_user':
+          setGeneralError('No account found. Please sign up first.');
+          break;
+        default:
+          setGeneralError(errorMessage || 'An error occurred. Please try again.');
+      }
+      
+      // Also clear the query parameters using navigate
+      navigate(window.location.pathname, { replace: true });
     }
   }, [location]);
+  
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    
+    // Clear error for the field being changed
+    if (errors[e.target.name as keyof typeof errors]) {
+      setErrors({
+        ...errors,
+        [e.target.name]: undefined
+      });
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { email?: string; password?: string } = {};
+    let isValid = true;
+    
+    // Email validation
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+      isValid = false;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        newErrors.email = "Please enter a valid email address";
+        isValid = false;
+      }
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      newErrors.password = "Password is required";
+      isValid = false;
+    }
+    
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccessMessage("");
+    e.preventDefault(); // Critical to prevent page refresh
+    
+    // Clear previous error states
+    setGeneralError("");
+    
+    // Validate form fields
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
-      const result = await login(formData.email, formData.password);
-      if (result.success) {
+      // Directly call API rather than using the utility function
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
+        credentials: 'include'
+      });
+
+      // Handle response
+      const data = await response.json();
+      
+      console.log("Login response:", response.status, data);
+
+      if (response.ok) {
+        // Store tokens and user data
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        
         setSuccessMessage("Login successful! Redirecting to dashboard...");
+        
+        // Navigate to dashboard after a delay
         setTimeout(() => {
-          navigate("/dashboard", { state: { message: "You have successfully logged in!" } });
-        }, 1000);
+          navigate("/dashboard");
+        }, 1500);
       } else {
-        setError(result.message || "Login failed");
+        // Handle error responses
+        if (data.errors) {
+          console.log("Setting field errors:", data.errors);
+          setErrors(data.errors);
+        } else if (data.message) {
+          setGeneralError(data.message);
+        } else {
+          setGeneralError("Login failed. Please check your credentials.");
+        }
       }
-    } catch (error: any) {
-      setError(error.message || "An error occurred. Please try again.");
+    } catch (error) {
+      console.error("Login error:", error);
+      setGeneralError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -70,9 +172,10 @@ const LoginForm: React.FC = () => {
         Access your dashboard and manage your campaigns.
       </p>
 
-      {error && (
+      {/* General error alert */}
+      {generalError && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative" role="alert">
-          <span className="block sm:inline">{error}</span>
+          <span className="block sm:inline">{generalError}</span>
         </div>
       )}
       
@@ -83,21 +186,43 @@ const LoginForm: React.FC = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {["email", "password"].map((field) => (
-          <div key={field}>
-            <label className="block text-sm font-semibold mb-1.5">
-              {field.charAt(0).toUpperCase() + field.slice(1)}
-            </label>
-            <input
-              type={field === "password" ? "password" : "email"}
-              name={field}
-              value={formData[field as keyof typeof formData]}
-              onChange={handleChange}
-              className="block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 outline-1 outline-gray-300 focus:outline-2 focus:outline-green-600"
-              required
-            />
-          </div>
-        ))}
+        {/* Email field with validation */}
+        <div>
+          <label className="block text-sm font-semibold mb-1.5">
+            Email
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            className={`block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 border focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
+              errors.email ? 'border-2 border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.email && (
+            <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          )}
+        </div>
+
+        {/* Password field with validation */}
+        <div>
+          <label className="block text-sm font-semibold mb-1.5">
+            Password
+          </label>
+          <input
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            className={`block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 border focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
+              errors.password ? 'border-2 border-red-500' : 'border-gray-300'
+            }`}
+          />
+          {errors.password && (
+            <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+          )}
+        </div>
 
         <div className="flex justify-between items-center">
           <div className="flex items-center">
@@ -126,7 +251,7 @@ const LoginForm: React.FC = () => {
 
         <button
           type="submit"
-          className="w-full p-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700 transition"
+          className="w-full p-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
           disabled={isLoading}
         >
           {isLoading ? "Logging in..." : "Login"}

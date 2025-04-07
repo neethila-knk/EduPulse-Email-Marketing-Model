@@ -1,20 +1,20 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Define a schema that includes TypeScript type safety
+// Define the User schema
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: false }, // Not required for OAuth users
-  profileImage: { type: String }, // URL to profile image
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   refreshToken: String,
+  profileImage: String,
   
   // OAuth fields
   provider: { 
     type: String, 
-    enum: ['local', 'google'], 
+    enum: ['local', 'google', 'facebook', 'twitter'], // Add more providers as needed
     default: 'local' 
   },
   providerId: String,
@@ -22,17 +22,22 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {}
   },
-  picture: String, // From OAuth provider (will be used as profileImage if no custom image)
+  
+  // Store Google tokens for revocation during logout
+  googleTokens: {
+    accessToken: String,
+    refreshToken: String
+  },
+  
+  picture: String,
   firstName: String,
   lastName: String,
-  isVerified: { type: Boolean, default: false }
+  isVerified: { type: Boolean, default: false },
+  
+  // Track last login time
+  lastLogin: { type: Date }
 }, {
   timestamps: true
-});
-
-// Virtual property to get profile image (custom or from provider)
-UserSchema.virtual('displayImage').get(function() {
-  return this.profileImage || this.picture || null;
 });
 
 // Hash password before saving
@@ -60,18 +65,22 @@ interface UserDocument extends mongoose.Document {
   username: string;
   email: string;
   password?: string;
-  profileImage?: string;
   resetPasswordToken?: string;
   resetPasswordExpires?: Date;
   refreshToken?: string;
-  provider: 'local' | 'google';
+  profileImage?: string;
+  provider: 'local' | 'google' | 'facebook' | 'twitter'; // Add more as needed
   providerId?: string;
   providerData?: any;
+  googleTokens?: {
+    accessToken?: string;
+    refreshToken?: string;
+  };
   picture?: string;
   firstName?: string;
   lastName?: string;
   isVerified: boolean;
-  displayImage?: string;
+  lastLogin?: Date;
 }
 
 // Create and export the model with type information

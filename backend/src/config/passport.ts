@@ -46,46 +46,54 @@ passport.use(
   )
 );
 
-// Google OAuth Strategy
+// Google OAuth Strategy - Fixed TypeScript errors
 passport.use(
   new GoogleStrategy(
     {
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       callbackURL: "/auth/google/callback",
+      // Note: prompt and accessType will be passed in the auth route
       scope: ["profile", "email"]
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (accessToken: string, refreshToken: string, profile: any, done: any) => {
       try {
-        // Check if user already exists
+        // Store Google tokens for potential revocation during logout
+        const googleTokens = { accessToken, refreshToken };
+
+        // Check if user already exists with this OAuth provider ID
         let user = await User.findOne({ 
           providerId: profile.id,
           provider: "google" 
         });
 
         if (user) {
+          // Update tokens on login
+          user.googleTokens = googleTokens;
+          await user.save();
           return done(null, user);
         }
 
         // Check if user exists with same email
         const email = profile.emails && profile.emails[0].value;
-        if (email) {
-          user = await User.findOne({ email });
-          
-          if (user) {
-            // Link accounts if user with this email exists
-            user.providerId = profile.id;
-            user.provider = "google";
-            user.providerData = profile;
-            if (profile.photos && profile.photos[0].value) {
-              user.picture = profile.photos[0].value;
-            }
-            await user.save();
-            return done(null, user);
+        if (!email) {
+          return done(new Error("No email found from Google account"), false);
+        }
+        
+        user = await User.findOne({ email });
+        
+        if (user) {
+          // User exists with this email - check the provider
+          if (user.provider === 'local') {
+            // This email is already registered with local auth
+            return done(new Error(`This email (${email}) is already registered. Please sign in with your password instead.`), false);
+          } else {
+            // Email exists but with a different OAuth provider
+            return done(new Error(`This email is already registered with ${user.provider}. Please use that login method.`), false);
           }
         }
 
-        // Create a new user
+        // Create a new user if email doesn't exist
         const newUser = await User.create({
           provider: "google",
           providerId: profile.id,
@@ -94,6 +102,7 @@ passport.use(
           firstName: profile.name?.givenName,
           lastName: profile.name?.familyName,
           picture: profile.photos?.[0].value,
+          googleTokens: googleTokens, // Store tokens
           providerData: profile,
           isVerified: true // Auto-verify OAuth users
         });
@@ -106,7 +115,7 @@ passport.use(
   )
 );
 
-// For existing session-based auth (optional if you want to keep sessions alongside JWT)
+// For existing session-based auth
 passport.serializeUser((user: any, done) => done(null, user.id));
 
 passport.deserializeUser(async (id, done) => {

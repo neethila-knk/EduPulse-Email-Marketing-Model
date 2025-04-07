@@ -1,5 +1,4 @@
 import axios from 'axios';
-//import type { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -20,10 +19,6 @@ interface UserData {
   username: string;
   email: string;
   provider: string;
-}
-
-interface ErrorResponse {
-  message: string;
 }
 
 // Setup axios instance with base URL
@@ -97,7 +92,7 @@ api.interceptors.response.use(
   }
 );
 
-export const login = async (email: string, password: string): Promise<{ success: boolean; user?: UserData; message?: string }> => {
+export const login = async (email: string, password: string) => {
   try {
     const response = await api.post<AuthResponse>('/auth/login', { email, password });
     const { accessToken, refreshToken, user } = response.data;
@@ -107,16 +102,34 @@ export const login = async (email: string, password: string): Promise<{ success:
     localStorage.setItem('refreshToken', refreshToken);
     localStorage.setItem('user', JSON.stringify(user));
     
-    return { success: true, user };
-  } catch (error) {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response: { data: any } };
+    return { 
+      success: true, 
+      user, 
+      message: response.data.message || 'Login successful' 
+    };
+  } catch (error: any) {
+    console.log("Login error in authUtils:", error);
+    
+    // Check if we have a response with data
+    if (error.response && error.response.data) {
+      const { data } = error.response;
+      
+      console.log("Error response data:", data);
+      
+      // Return the complete error structure including errors object if it exists
       return { 
         success: false, 
-        message: axiosError.response?.data?.message || 'Login failed' 
+        message: data.message || 'Login failed',
+        errors: data.errors // Pass through the field-specific errors
       };
     }
-    return { success: false, message: 'An unexpected error occurred' };
+    
+    // Handle network or other errors
+    return { 
+      success: false, 
+      message: error.message || 'An unexpected error occurred',
+      errors: {}
+    };
   }
 };
 
@@ -124,7 +137,7 @@ export const register = async (userData: {
   username: string;
   email: string;
   password: string;
-}): Promise<{ success: boolean; user?: UserData; message?: string }> => {
+}) => {
   try {
     const response = await api.post<AuthResponse>('/auth/register', userData);
     const { accessToken, refreshToken, user } = response.data;
@@ -135,12 +148,12 @@ export const register = async (userData: {
     localStorage.setItem('user', JSON.stringify(user));
     
     return { success: true, user };
-  } catch (error) {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as { response: { data: any } };
+  } catch (error: any) {
+    if (error.response && error.response.data) {
       return { 
         success: false, 
-        message: axiosError.response?.data?.message || 'Registration failed' 
+        message: error.response.data.message || 'Registration failed',
+        errors: error.response.data.errors
       };
     }
     return { success: false, message: 'An unexpected error occurred' };
