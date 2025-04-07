@@ -29,6 +29,39 @@ const SignupForm: React.FC = () => {
       // Clear the location state after showing the message
       window.history.replaceState({}, document.title);
     }
+    
+    // Enhanced error handling for query params
+    const params = new URLSearchParams(location.search);
+    if (params.get('error')) {
+      const errorType = params.get('error');
+      const errorMessage = params.get('message');
+      
+      // Handle specific error types
+      switch(errorType) {
+        case 'email_exists':
+          setError(errorMessage || 
+            'This email is already registered with a different login method. Please use the correct login method.');
+          break;
+        case 'auth_failed':
+          setError('Authentication failed. Please try again.');
+          break;
+        case 'oauth_failed':
+          setError('Google sign-up failed. Please try again or use email registration.');
+          break;
+        case 'username_taken':
+          setError('Username is already taken. Please choose another one.');
+          break;
+        default:
+          setError(errorMessage || 'An error occurred. Please try again.');
+      }
+      
+      // Remove query parameters after displaying the error
+      // This prevents the error from showing again on page refresh
+      if (window.history.replaceState) {
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+      }
+    }
   }, [location]);
 
   // Helper function for basic email validation

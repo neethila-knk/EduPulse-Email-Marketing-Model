@@ -167,6 +167,56 @@ router.patch(
   }
 );
 
+// Delete profile (account) route
+router.delete(
+  "/profile",
+  authenticateJWT,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { password } = req.body;
+      const userId = (req.user as any)._id;
+      const user = await User.findById(userId);
+      
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+      }
+      
+      // For local accounts, verify the password
+      if (user.provider === "local" && user.password) {
+        if (!password) {
+          res.status(400).json({ message: "Password is required to delete your account" });
+          return;
+        }
+        
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+          res.status(400).json({ message: "Password is incorrect" });
+          return;
+        }
+      }
+      
+      // Clean up profile image file if it exists
+      if (user.profileImage) {
+        const filename = path.basename(user.profileImage);
+        const imagePath = path.join(__dirname, "../uploads/profile-images", filename);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+      }
+      
+      // Delete the user from the database
+      await User.findByIdAndDelete(userId);
+      
+      res.json({ message: "Account deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+
 // Delete profile image route
 router.delete(
   "/profile/image",

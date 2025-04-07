@@ -20,8 +20,8 @@ export interface Campaign {
   }
   
   export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'outline' | 'pending' | 'cancel';
-    size?: 'sm' | 'md' | 'lg';
+    variant?: 'primary' | 'secondary' | 'outline' | 'pending' | 'cancel' | 'danger';
+    size?: 'xsm' | 'sm' | 'md' | 'lg';
     children: React.ReactNode;
   }
   

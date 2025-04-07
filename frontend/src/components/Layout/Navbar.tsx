@@ -1,7 +1,8 @@
 // src/components/Layout/Navbar.tsx
-import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import SearchInput from '../UI/SearchInput'; // Adjust import path as needed
+import React, { useState, useRef, useEffect } from "react";
+import { Link } from "react-router-dom";
+import SearchInput from "../UI/SearchInput"; // Adjust import path as needed
+import Alert from "../UI/Alert";
 
 interface NavbarProps {
   user?: {
@@ -20,6 +21,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   const [isClosing, setIsClosing] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
   // Toggle dropdown on click (alternative to hover)
   const toggleDropdown = () => {
@@ -44,7 +46,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    
+
     if (isClosing) {
       // Cancel closing animation
       setIsClosing(false);
@@ -53,14 +55,14 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       setDropdownVisible(true);
     }
   };
-  
+
   const handleMouseLeave = () => {
     // Use a longer delay before starting the closing animation
     // This helps prevent accidental closures during normal mouse movement
     timeoutRef.current = setTimeout(() => {
       // Start closing animation
       setIsClosing(true);
-      
+
       // After animation completes, hide the dropdown
       setTimeout(() => {
         setDropdownVisible(false);
@@ -68,7 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       }, 300); // Match this to animation duration
     }, 500); // Use a longer delay (500ms) for better hover stability
   };
-  
+
   // Close button handler
   const handleClose = () => {
     setIsClosing(true);
@@ -77,19 +79,38 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
       setIsClosing(false);
     }, 300);
   };
-  
+
+  const handleLogoutClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowLogoutAlert(true);
+    // Close the dropdown
+    handleClose();
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutAlert(false);
+    if (onLogout) onLogout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutAlert(false);
+  };
+
   // Click outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         handleClose();
       }
     }
-    
+
     if (dropdownVisible) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       if (timeoutRef.current) {
@@ -99,22 +120,24 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
   }, [dropdownVisible]);
 
   // Function to render user avatar (profile image or default icon)
-  const renderUserAvatar = (size: 'small' | 'large') => {
+  const renderUserAvatar = (size: "small" | "large") => {
     const hasProfileImage = user && user.profileImage;
-    const sizeClasses = size === 'small' ? 'w-10 h-10' : 'w-12 h-12';
-    const iconSize = size === 'small' ? 'w-6 h-6' : 'w-7 h-7';
-    
+    const sizeClasses = size === "small" ? "w-10 h-10" : "w-12 h-12";
+    const iconSize = size === "small" ? "w-6 h-6" : "w-7 h-7";
+
     if (hasProfileImage) {
       return (
         <div className={`${sizeClasses} rounded-full overflow-hidden`}>
-          <img 
-            src={user.profileImage} 
-            alt={`${user.username}'s profile`} 
+          <img
+            src={user.profileImage}
+            alt={`${user.username}'s profile`}
             className="w-full h-full object-cover"
             onError={(e) => {
               // Fallback to default icon if image fails to load
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.currentTarget.parentNode as HTMLElement).classList.add('bg-gray-200');
+              (e.target as HTMLImageElement).style.display = "none";
+              (e.currentTarget.parentNode as HTMLElement).classList.add(
+                "bg-gray-200"
+              );
               (e.currentTarget.parentNode as HTMLElement).innerHTML = `
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -136,10 +159,12 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
         </div>
       );
     }
-    
+
     // Default icon if no profile image
     return (
-      <div className={`${sizeClasses} rounded-full bg-gray-200 flex items-center justify-center`}>
+      <div
+        className={`${sizeClasses} rounded-full bg-gray-200 flex items-center justify-center`}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className={`${iconSize} text-gray-600`}
@@ -187,26 +212,24 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           </button>
         </div>
 
-        <div 
-          className="dropdown-trigger-area relative" 
+        <div
+          className="dropdown-trigger-area relative"
           ref={dropdownRef}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <button 
+          <button
             className="flex items-center focus:outline-none"
             onClick={toggleDropdown}
           >
             {/* Using the renderUserAvatar function for the small avatar */}
-            <div className="mr-2">
-              {renderUserAvatar('small')}
-            </div>
+            <div className="mr-2">{renderUserAvatar("small")}</div>
           </button>
-          
+
           {dropdownVisible && (
-            <div 
+            <div
               className={`absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50 ${
-                isClosing ? 'dropdown-animate-close' : 'dropdown-animate-open'
+                isClosing ? "dropdown-animate-close" : "dropdown-animate-open"
               }`}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
@@ -214,59 +237,107 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
               {user && (
                 <div className="px-4 py-3 border-b border-gray-100 flex items-start relative">
                   {/* Close button */}
-                  <button 
+                  <button
                     onClick={handleClose}
                     className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 focus:outline-none"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
-                  
+
                   {/* Using the renderUserAvatar function for the large avatar */}
                   <div className="mr-3 mt-2 flex-shrink-0">
-                    {renderUserAvatar('large')}
+                    {renderUserAvatar("large")}
                   </div>
-                  
+
                   <div className="flex-1 min-w-0 pt-4">
-                    <p className="text-sm font-medium text-gray-700 truncate">{user.username}</p>
-                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                    <p className="text-sm font-medium text-gray-700 truncate">
+                      {user.username}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">
+                      {user.email}
+                    </p>
                   </div>
                 </div>
               )}
-              
+
               <div className="py-1">
-                <Link 
-                  to="/profile" 
+                <Link
+                  to="/profile"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-3 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                   User Profile
                 </Link>
               </div>
-              
+
               <div className="py-1 border-t border-gray-100">
-                <Link 
-                  to="/new-campaign" 
+                <Link
+                  to="/new-campaign"
                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-3 text-gray-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   Create New Campaign
                 </Link>
               </div>
-              
+
               {onLogout && (
                 <div className="py-1 border-t border-gray-100">
                   <button
-                    onClick={onLogout}
+                    onClick={handleLogoutClick}
                     className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-gray-100 text-left"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-3 text-red-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                      />
                     </svg>
                     Logout
                   </button>
@@ -276,6 +347,17 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
           )}
         </div>
       </div>
+      {showLogoutAlert && (
+        <Alert
+          title="Logout"
+          message="Are you sure you want to logout?"
+          confirmText="Logout"
+          cancelText="Cancel"
+          onConfirm={handleConfirmLogout}
+          onCancel={handleCancelLogout}
+          position="top-center"
+        />
+      )}
     </div>
   );
 };

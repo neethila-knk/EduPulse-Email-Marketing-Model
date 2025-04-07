@@ -1,6 +1,9 @@
+// Sidebar.tsx
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
 import Logo from "../UI/Logo";
+import Alert from "../UI/Alert";
 
 interface SidebarProps {
   onLogout?: () => void;
@@ -9,6 +12,10 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+
+  // Fixed toast id to prevent multiple toasts
+  const logoutConfirmToastId = "logout-confirm-toast";
 
   // Determine which menu item is active based on current path
   const isActive = (path: string) => {
@@ -121,21 +128,42 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
     },
   ];
 
-  // Handle logout click
-  const handleLogoutClick = (e: React.MouseEvent, href: string) => {
-    if (href === "#" && onLogout) {
-      e.preventDefault();
-      onLogout();
-    }
+  const showConfirmLogout = () => {
+    setShowLogoutConfirmation(true);
   };
 
+  const handleConfirmLogout = () => {
+    setShowLogoutConfirmation(false);
+    if (onLogout) onLogout();
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirmation(false);
+  };
+
+  const handleLogoutClick = (e: React.MouseEvent, href: string) => {
+    if (href === "#") {
+      e.preventDefault();
+      showConfirmLogout();
+    }
+  };
   return (
     <div
       className={`h-screen bg-dark text-white flex flex-col transition-all duration-300 ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
-      {/* Logo area with more padding */}
+      {showLogoutConfirmation && (
+        <Alert
+          title="Logout Confirmation"
+          message="Are you sure you want to logout?"
+          confirmText="Logout"
+          cancelText="Cancel"
+          onConfirm={handleConfirmLogout}
+          onCancel={handleCancelLogout}
+          position="top-center"
+        />
+      )}
       <div className="py-6 px-4 flex items-center justify-between border-b border-gray-700">
         <Logo collapsed={collapsed} />
         <button
@@ -162,28 +190,23 @@ const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {
           </svg>
         </button>
       </div>
-
-      {/* Menu items with increased spacing */}
       <div className="flex-1 overflow-y-auto pt-8 px-3">
         {menuItems.map((item, index) => (
           <div
             key={index}
             onClick={(e) => handleLogoutClick(e, item.href)}
-            className="mb-6" // Increased spacing between items
+            className="mb-6"
           >
             <Link
               to={item.href}
               className={`flex items-center px-5 py-4 text-base transition-all duration-300 ease-in-out ${
-                /* Smooth transition */
                 isActive(item.href)
                   ? "text-white bg-gray-700"
                   : "text-gray-300 hover:bg-gray-700 hover:text-white"
               } rounded-lg ${collapsed ? "justify-center" : ""}`}
             >
               {item.icon && (
-                <span className={`${collapsed ? "" : "mr-4"}`}>
-                  {item.icon}
-                </span>
+                <span className={collapsed ? "" : "mr-4"}>{item.icon}</span>
               )}
               {!collapsed && <span className="font-medium">{item.label}</span>}
             </Link>

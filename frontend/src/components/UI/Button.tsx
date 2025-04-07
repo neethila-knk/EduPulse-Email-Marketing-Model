@@ -32,12 +32,14 @@ const Button: React.FC<ButtonProps> = ({
     primary: 'bg-green hover:bg-light text-white hover:text-dark button-shadow',
     secondary: 'bg-white hover:bg-gray-50 text-green hover:text-dark border border-green button-shadow',
     pending: 'bg-white hover:bg-gray-50 text-yellow hover:text-dark border border-green button-shadow',
-    cancel: 'bg-white hover:bg-gray-50 text-red hover:text-dark border border-green button-shadow',
+    cancel: 'bg-white hover:bg-gray-50 text-red-500 hover:text-red-600 border border-red-500 button-shadow',
     outline: 'border border-green-600 text-green-600 hover:bg-green-50 hover:border-green-700',
+    danger: 'bg-red hover:bg-light text-white hover:text-red button-shadow',
   };
   
   // Size classes
   const sizeClasses = {
+    xsm: 'px-2 py-1 text-sm',
     sm: 'px-3 py-1.5 text-sm',
     md: 'px-4 py-2 text-sm',
     lg: 'px-5 py-2.5 text-base',

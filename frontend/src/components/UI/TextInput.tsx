@@ -1,5 +1,5 @@
 // components/UI/TextInput.tsx
-import React from 'react';
+import React from "react";
 
 interface TextInputProps {
   id: string;
@@ -12,7 +12,7 @@ interface TextInputProps {
   required?: boolean;
   className?: string;
   labelClassName?: string;
-  disabled?: boolean; // Added disabled prop
+  disabled?: boolean;
 }
 
 const TextInput: React.FC<TextInputProps> = ({
@@ -20,22 +20,22 @@ const TextInput: React.FC<TextInputProps> = ({
   label,
   value,
   onChange,
-  placeholder = '',
-  type = 'text',
+  placeholder = "",
+  type = "text",
   error,
   required = false,
-  className = '',
-  labelClassName = 'text-sm font-medium',
-  disabled = false, // Default to false
+  className = "",
+  labelClassName = "text-sm font-medium",
+  disabled = false,
 }) => {
   return (
-    <div className={`flex mb-4 ${className}`}>
-      <div className="w-1/4 pt-2">
+    <div className={`flex flex-col md:flex-row md:items-center mb-4 ${className}`}>
+      <div className="md:w-1/4 mb-1 md:mb-0">
         <label htmlFor={id} className={`block ${labelClassName} text-gray-700`}>
           {label}
         </label>
       </div>
-      <div className="w-3/4">
+      <div className="md:w-3/4">
         <input
           id={id}
           type={type}
@@ -44,11 +44,15 @@ const TextInput: React.FC<TextInputProps> = ({
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className={`w-full px-3 py-2 border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${disabled ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'text-gray-700'}`}
+          className={`w-full px-3 py-2 border ${
+            error ? "border-red-500" : "border-gray-300"
+          } rounded-md focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
+            disabled
+              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+              : "text-gray-700"
+          }`}
         />
-        {error && (
-          <p className="mt-1 text-sm text-red-500">{error}</p>
-        )}
+        {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
       </div>
     </div>
   );

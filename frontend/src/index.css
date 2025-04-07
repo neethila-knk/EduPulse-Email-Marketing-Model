@@ -1,15 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
-body,
+
 html {
   font-family: "Inter", sans-serif;
 }
 
 @theme {
   --color-green: #157f1f;
-  --color-light: #F2F4F3;
+  --color-light: #f2f4f3;
   --color-dark: #232c33;
-  --color-yellow: #F9A620;
-  --color-red: #CC2936;
+  --color-yellow: #f9a620;
+  --color-red: #cc2936;
+  --font-display: "Inter", sans-serif;
 }
 
 /* Button animations */
@@ -34,7 +36,8 @@ html {
 
 .hover-lift:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .hover-lift:active {
@@ -47,7 +50,8 @@ html {
 }
 
 .button-shadow:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* user profile style */
@@ -63,7 +67,6 @@ html {
   transform: translateY(0);
   transform: scale(0.98);
 }
-
 
 /* Dropdown animations - add these to your index.css file */
 @keyframes dropdownShow {
@@ -102,7 +105,7 @@ html {
 }
 
 .dropdown-trigger-area::before {
-  content: '';
+  content: "";
   position: absolute;
   top: -10px;
   right: -10px;
@@ -110,7 +113,6 @@ html {
   left: -10px;
   z-index: -1;
 }
-
 
 /* toast*/
 @keyframes toastFadeIn {
@@ -126,4 +128,18 @@ html {
 
 .toast-animation {
   animation: toastFadeIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out forwards;
 }
