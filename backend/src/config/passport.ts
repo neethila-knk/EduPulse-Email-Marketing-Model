@@ -4,6 +4,7 @@ import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
+import Admin from "../models/Admin";
 
 // Local Strategy
 passport.use(
@@ -27,6 +28,54 @@ passport.use(
   })
 );
 
+// Admin-local Strategy - UPDATED to check isActive status
+passport.use("admin-local", new LocalStrategy(
+  { usernameField: "email" },
+  async (email, password, done) => {
+    try {
+      const admin = await Admin.findOne({ email });
+      if (!admin) return done(null, false, { message: "Invalid email" });
+
+      // Check if admin account is active
+      if (admin.isActive === false) {
+        return done(null, false, { 
+          message: "Your admin account has been deactivated. Please contact another administrator." 
+        });
+      }
+
+      const isMatch = await bcrypt.compare(password, admin.password);
+      if (!isMatch) return done(null, false, { message: "Incorrect password" });
+
+      return done(null, admin);
+    } catch (err) {
+      return done(err);
+    }
+  }
+));
+
+// Add an admin-jwt strategy for verifying admin tokens
+passport.use("admin-jwt", new JwtStrategy(
+  {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: process.env.JWT_ACCESS_SECRET || 'fallback_jwt_secret',
+  },
+  async (payload, done) => {
+    try {
+      const admin = await Admin.findById(payload.id);
+      if (!admin) return done(null, false);
+      
+      // Check if admin account is active
+      if (admin.isActive === false) {
+        return done(null, false);
+      }
+      
+      return done(null, admin);
+    } catch (error) {
+      return done(error, false);
+    }
+  }
+));
+
 // JWT Strategy
 passport.use(
   new JwtStrategy(
@@ -46,7 +95,7 @@ passport.use(
   )
 );
 
-// Google OAuth Strategy - Fixed TypeScript errors
+// Google OAuth Strategy - With account blocking check
 passport.use(
   new GoogleStrategy(
     {
@@ -68,6 +117,11 @@ passport.use(
         });
 
         if (user) {
+          // Check if the user account is blocked
+          if (user.isActive === false) {
+            return done(new Error("ACCOUNT_DEACTIVATED"), false);
+          }
+
           // Update tokens on login
           user.googleTokens = googleTokens;
           await user.save();
@@ -83,6 +137,11 @@ passport.use(
         user = await User.findOne({ email });
         
         if (user) {
+          // Check if the user account is blocked - even if found by email
+          if (user.isActive === false) {
+            return done(new Error("ACCOUNT_DEACTIVATED"), false);
+          }
+
           // User exists with this email - check the provider
           if (user.provider === 'local') {
             // This email is already registered with local auth
@@ -104,7 +163,8 @@ passport.use(
           picture: profile.photos?.[0].value,
           googleTokens: googleTokens, // Store tokens
           providerData: profile,
-          isVerified: true // Auto-verify OAuth users
+          isVerified: true, // Auto-verify OAuth users
+          isActive: true // Ensure new users are active by default
         });
 
         return done(null, newUser);
@@ -114,7 +174,6 @@ passport.use(
     }
   )
 );
-
 // For existing session-based auth
 passport.serializeUser((user: any, done) => done(null, user.id));
 

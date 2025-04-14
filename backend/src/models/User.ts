@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
-// Define the User schema
+// Define the User schema with isActive field
 const UserSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
@@ -33,6 +33,9 @@ const UserSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
   isVerified: { type: Boolean, default: false },
+  
+  // Account status field - NEW
+  isActive: { type: Boolean, default: true },
   
   // Track last login time
   lastLogin: { type: Date }
@@ -80,6 +83,7 @@ interface UserDocument extends mongoose.Document {
   firstName?: string;
   lastName?: string;
   isVerified: boolean;
+  isActive: boolean; // NEW field
   lastLogin?: Date;
 }
 

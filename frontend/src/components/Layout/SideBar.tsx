@@ -7,6 +7,9 @@ import Alert from "../UI/Alert";
 
 interface SidebarProps {
   onLogout?: () => void;
+
+  sidebarOpen?: boolean;
+  setSidebarOpen?: (open: boolean) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onLogout }) => {

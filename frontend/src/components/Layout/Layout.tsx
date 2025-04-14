@@ -12,6 +12,7 @@ interface LayoutProps {
     email: string;
     provider: string;
   } | null;
+  navItems?: { name: string; path: string; icon: string }[]; // Add navItems property
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, onLogout, user }) => {

@@ -86,11 +86,11 @@ const PageHeader: React.FC<PageHeaderProps> = ({
                   </svg>
                 </button>
               )}
-              <h1 className="text-xl font-bold text-white">{title}</h1>
+              <h1 className="text-xl font-bold text-white mr-2">{title}</h1>
             </div>
 
             {subheading && (
-              <p className="text-white text-sm opacity-80 mt-1 ml-8">
+              <p className="text-white text-sm opacity-80 mt-1 ml-8 mr-2">
                 {subheading}
               </p>
             )}
