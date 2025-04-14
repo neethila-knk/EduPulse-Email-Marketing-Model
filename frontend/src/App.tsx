@@ -18,6 +18,15 @@ import UserProfile from "./pages/UserProfile";
 import PageNotFound from "./pages/404";
 import CampaignAnalytics from "./pages/CampaignAnalytics";
 import ProtectedRoute from "./components/Auth/ProtectedRoute";
+import AdminProtectedRoute from "./components/Auth/AdminProtectedRoute";
+import AdminPanel from "./pages/admin/AdminPanel";
+import AdminDashboard from "./pages/admin/EmailClustering";
+import AdminLogin from "./pages/admin/AdminLogin";
+import ClusterManagement from "./pages/admin/ClusterManagement";
+import VisualizationsPage from "./pages/admin/VisualizationsPage";
+import AdminModelPerformance from "./pages/admin/ModelPerformance";
+import UserManagement from "./pages/admin/UserManagement";
+import AdminManagement from "./pages/admin/AdminManagement";
 
 const App = () => {
   return (
@@ -25,7 +34,7 @@ const App = () => {
       <ToastContainer />
       <Router>
         <Routes>
-          {/* Authentication Routes */}
+          {/* User Auth Routes */}
           <Route path="/" element={<Navigate replace to="/login" />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
@@ -36,7 +45,7 @@ const App = () => {
           />
           <Route path="/oauth-success" element={<OAuthSuccess />} />
 
-          {/* Protected Routes */}
+          {/* User Protected Routes */}
           <Route
             path="/dashboard"
             element={
@@ -53,6 +62,15 @@ const App = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/campaigns"
+            element={
+              <ProtectedRoute>
+                <CampaignsPage />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="/new-campaign"
             element={
@@ -76,6 +94,78 @@ const App = () => {
                 <CampaignAnalytics />
               </ProtectedRoute>
             }
+          />
+
+          {/* Admin Routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+
+          <Route
+            path="/admin/dashboard"
+            element={
+              <AdminProtectedRoute>
+                <AdminPanel />
+              </AdminProtectedRoute>
+            }
+          />
+          {/* Add the AdminDashboard route for email clustering */}
+          <Route
+            path="/admin/clustering"
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/managecluster"
+            element={
+              <AdminProtectedRoute>
+                <ClusterManagement />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/visualizations"
+            element={
+              <AdminProtectedRoute>
+                <VisualizationsPage />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/performance"
+            element={
+              <AdminProtectedRoute>
+                <AdminModelPerformance />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/manageusers"
+            element={
+              <AdminProtectedRoute>
+                <UserManagement />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/manageadmins"
+            element={
+              <AdminProtectedRoute>
+                <AdminManagement />
+              </AdminProtectedRoute>
+            }
+          />
+
+          {/* Redirect /admin to /admin/dashboard */}
+          <Route
+            path="/admin"
+            element={<Navigate replace to="/admin/dashboard" />}
           />
 
           {/* 404 Page */}

@@ -27,10 +27,44 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Create an in-memory storage as a fallback
+const memoryStorage: Record<string, string> = {};
+
+// Helper function to safely store data with localStorage fallback to memory
+const safeStore = (key: string, value: string): void => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn(`Error storing ${key} in localStorage, using memory storage instead:`, error);
+    memoryStorage[key] = value;
+  }
+};
+
+// Helper function to safely retrieve data with localStorage fallback from memory
+const safeGet = (key: string): string | null => {
+  try {
+    const value = localStorage.getItem(key);
+    return value;
+  } catch (error) {
+    console.warn(`Error retrieving ${key} from localStorage, using memory storage instead:`, error);
+    return memoryStorage[key] || null;
+  }
+};
+
+// Helper function to safely remove data from both storages
+const safeRemove = (key: string): void => {
+  try {
+    localStorage.removeItem(key);
+  } catch (error) {
+    console.warn(`Error removing ${key} from localStorage:`, error);
+  }
+  delete memoryStorage[key];
+};
+
 // Add interceptor to include the access token in requests
 api.interceptors.request.use(
   (config) => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = safeGet('accessToken');
     // Make sure config.headers exists
     if (accessToken && config.headers) {
       config.headers.Authorization = `Bearer ${accessToken}`;
@@ -57,7 +91,7 @@ api.interceptors.response.use(
         }
         
         try {
-          const refreshToken = localStorage.getItem('refreshToken');
+          const refreshToken = safeGet('refreshToken');
           if (!refreshToken) {
             throw new Error('No refresh token available');
           }
@@ -70,7 +104,7 @@ api.interceptors.response.use(
           
           // Store the new access token
           const { accessToken } = response.data;
-          localStorage.setItem('accessToken', accessToken);
+          safeStore('accessToken', accessToken);
           
           // Update the authorization header
           if (originalRequest.headers) {
@@ -98,9 +132,9 @@ export const login = async (email: string, password: string) => {
     const { accessToken, refreshToken, user } = response.data;
     
     // Store tokens and user data
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    safeStore('accessToken', accessToken);
+    safeStore('refreshToken', refreshToken);
+    safeStore('user', JSON.stringify(user));
     
     return { 
       success: true, 
@@ -143,9 +177,9 @@ export const register = async (userData: {
     const { accessToken, refreshToken, user } = response.data;
     
     // Store tokens and user data
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-    localStorage.setItem('user', JSON.stringify(user));
+    safeStore('accessToken', accessToken);
+    safeStore('refreshToken', refreshToken);
+    safeStore('user', JSON.stringify(user));
     
     return { success: true, user };
   } catch (error: any) {
@@ -168,22 +202,23 @@ export const logout = async (): Promise<void> => {
     console.error('Logout API error:', error);
   } finally {
     // Clear local storage regardless of API response
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    safeRemove('accessToken');
+    safeRemove('refreshToken');
+    safeRemove('user');
   }
 };
 
 export const getUser = (): UserData | null => {
-  const userString = localStorage.getItem('user');
+  const userString = safeGet('user');
   return userString ? JSON.parse(userString) : null;
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!localStorage.getItem('accessToken');
+  return !!safeGet('accessToken');
 };
 
 export const authApi = api; // Export the configured axios instance
 
 // OAuth links
 export const googleAuthUrl = `${API_URL}/auth/google`;
+

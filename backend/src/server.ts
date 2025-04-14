@@ -9,6 +9,8 @@ import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import profileRoutes from "./routes/profileRoutes"; // Import the new profile routes
 import "./config/passport";
+import clusteringRoutes from "./routes/clusteringRoutes";
+import adminAuthRoutes from "./routes/adminAuth";
 
 dotenv.config();
 connectDB();
@@ -76,6 +78,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Mount routes
 app.use("/auth", authRoutes);
 app.use("/api", profileRoutes);
+app.use('/api', clusteringRoutes);
+app.use("/admin", adminAuthRoutes);
+app.use('/api/admin', adminAuthRoutes); // User management routes
+
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

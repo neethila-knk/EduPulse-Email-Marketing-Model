@@ -86,6 +86,7 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
 });
 
 // Login route
+
 router.post("/login", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     // Validate inputs
@@ -110,6 +111,20 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction): P
         errors: {
           email: "Please enter a valid email address",
         },
+      });
+      return;
+    }
+
+    // Find user by email first to check if account is active
+    const user = await User.findOne({ email });
+    
+    if (user && user.isActive === false) {
+      res.status(403).json({
+        message: "Your account has been deactivated. Please contact support for assistance.",
+        error: "ACCOUNT_DEACTIVATED",
+        errors: {
+          auth: "Account deactivated"
+        }
       });
       return;
     }
@@ -609,7 +624,12 @@ router.get(
         // Redirect to frontend with specific error message
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
         
-        // Check for specific error messages
+        // Check for account deactivation error first
+        if (err.message === "ACCOUNT_DEACTIVATED") {
+          return res.redirect(`${frontendUrl}/login?error=account_deactivated`);
+        }
+        
+        // Check for other specific error messages
         if (err.message && err.message.includes("already registered")) {
           // Encode the error message to include in the URL
           const encodedMessage = encodeURIComponent(err.message);
@@ -622,6 +642,11 @@ router.get(
       
       if (!user) {
         return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=no_user`);
+      }
+      
+      // Check if user account is active as an additional safeguard
+      if (user.isActive === false) {
+        return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=account_deactivated`);
       }
       
       // Proceed with successful authentication
@@ -649,6 +674,5 @@ router.get(
     })(req, res, next);
   }
 );
-
 
 export default router;

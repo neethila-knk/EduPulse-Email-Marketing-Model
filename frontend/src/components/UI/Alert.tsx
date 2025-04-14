@@ -1,6 +1,6 @@
 import React from "react";
 import Button from "../UI/Button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info, CheckCircle2, XCircle } from "lucide-react";
 
 type Position =
   | "top-center"
@@ -11,15 +11,19 @@ type Position =
   | "bottom-right"
   | "bottom-left";
 
+type AlertType = "warning" | "info" | "success" | "error";
+
 interface AlertProps {
   title?: string;
   message: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void; // <- make it optional
   confirmText?: string;
   cancelText?: string;
   position?: Position;
-  children?: React.ReactNode; // Add children prop
+  type?: AlertType; // <-- added type
+  children?: React.ReactNode;
+  showCancelButton?: boolean; // <-- add this
 }
 
 const Alert: React.FC<AlertProps> = ({
@@ -30,9 +34,10 @@ const Alert: React.FC<AlertProps> = ({
   confirmText = "Yes",
   cancelText = "No",
   position = "top-center",
-  children, // destructure children
+  type = "warning", // default to warning
+  children,
+  showCancelButton,
 }) => {
-  // Get position classes based on position prop with responsive adjustments
   const getPositionClasses = (): string => {
     const baseClasses = "fixed z-50";
     switch (position) {
@@ -55,29 +60,51 @@ const Alert: React.FC<AlertProps> = ({
     }
   };
 
+  const getIcon = () => {
+    switch (type) {
+      case "warning":
+        return (
+          <AlertTriangle className="text-amber-500 flex-shrink-0" size={18} />
+        );
+      case "info":
+        return <Info className="text-blue-500 flex-shrink-0" size={18} />;
+      case "success":
+        return (
+          <CheckCircle2 className="text-green-600 flex-shrink-0" size={18} />
+        );
+      case "error":
+        return <XCircle className="text-red-600 flex-shrink-0" size={18} />;
+      default:
+        return (
+          <AlertTriangle className="text-amber-500 flex-shrink-0" size={18} />
+        );
+    }
+  };
+
   return (
     <div className={getPositionClasses()}>
       <div className="font-inter w-full bg-white rounded-lg p-4 shadow-md border border-gray-200 animate-fadeIn">
         <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <AlertTriangle className="text-amber-500 flex-shrink-0" size={18} />
+          {getIcon()}
           <h3 className="font-medium text-gray-900 text-sm sm:text-base">
             {title}
           </h3>
         </div>
         <p className="mb-4 text-sm sm:text-base text-gray-700">{message}</p>
 
-        {/* Render children (such as the password input) */}
         {children}
 
         <div className="flex justify-end space-x-2">
-          <Button
-            variant="outline"
-            size="xsm"
-            onClick={onCancel}
-            className="text-xs sm:text-sm px-2 sm:px-3 py-1"
-          >
-            {cancelText}
-          </Button>
+          {showCancelButton !== false && ( // default true if not passed
+            <Button
+              variant="outline"
+              size="xsm"
+              className="text-xs sm:text-sm px-2 sm:px-3 py-1"
+              onClick={onCancel ?? (() => {})} // fallback if undefined
+            >
+              {cancelText}
+            </Button>
+          )}
           <Button
             variant="primary"
             size="xsm"

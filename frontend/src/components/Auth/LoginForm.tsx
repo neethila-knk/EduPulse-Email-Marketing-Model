@@ -4,11 +4,12 @@ import { login, googleAuthUrl } from "../../utils/authUtils";
 
 const LoginForm: React.FC = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; auth?: string }>({});
   const [generalError, setGeneralError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const [isAccountBlocked, setIsAccountBlocked] = useState(false); // New state for tracking blocked accounts
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -18,50 +19,58 @@ const LoginForm: React.FC = () => {
   }, [errors]);
 
   // Dynamically update the title when the component mounts
-  useEffect(() => {
-    document.title = "Login | EduPulse";
+ // Dynamically update the title when the component mounts
+useEffect(() => {
+  document.title = "Login | EduPulse";
+
+  // Check for messages passed via location state
+  if (location.state && (location.state as any).message) {
+    setGeneralError((location.state as any).message);
+    
+    // Use React Router's navigate function to clear the state
+    navigate(location.pathname, { replace: true });
+  }
   
-    // Check for messages passed via location state
-    if (location.state && (location.state as any).message) {
-      setGeneralError((location.state as any).message);
-      
-      // Use React Router's navigate function to clear the state
-      navigate(location.pathname, { replace: true });
+  // Enhanced error handling for query params
+  const params = new URLSearchParams(location.search);
+  if (params.get('error')) {
+    const errorType = params.get('error');
+    const errorMessage = params.get('message');
+    
+    // Handle specific error types
+    switch(errorType) {
+      case 'email_exists':
+        setGeneralError(errorMessage || 
+          'This email is already registered with a different login method. Please use the correct login method.');
+        break;
+      case 'auth_failed':
+        setGeneralError('Authentication failed. Please try again.');
+        break;
+      case 'expired':
+        setGeneralError('Your session has expired. Please log in again.');
+        break;
+      case 'oauth_failed':
+        setGeneralError('Google sign-in failed. Please try again or use email/password login.');
+        break;
+      case 'no_user':
+        setGeneralError('No account found. Please sign up first.');
+        break;
+      case 'account_deactivated': // Special handling for deactivated accounts
+        // Clear any existing tokens for security
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        
+        setIsAccountBlocked(true);
+        setGeneralError('Your account has been deactivated. Please contact support for assistance.');
+        break;
+      default:
+        setGeneralError(errorMessage || 'An error occurred. Please try again.');
     }
     
-    // Enhanced error handling for query params
-    const params = new URLSearchParams(location.search);
-    if (params.get('error')) {
-      const errorType = params.get('error');
-      const errorMessage = params.get('message');
-      
-      // Handle specific error types
-      switch(errorType) {
-        case 'email_exists':
-          setGeneralError(errorMessage || 
-            'This email is already registered with a different login method. Please use the correct login method.');
-          break;
-        case 'auth_failed':
-          setGeneralError('Authentication failed. Please try again.');
-          break;
-        case 'expired':
-          setGeneralError('Your session has expired. Please log in again.');
-          break;
-        case 'oauth_failed':
-          setGeneralError('Google sign-in failed. Please try again or use email/password login.');
-          break;
-        case 'no_user':
-          setGeneralError('No account found. Please sign up first.');
-          break;
-        default:
-          setGeneralError(errorMessage || 'An error occurred. Please try again.');
-      }
-      
-      // Also clear the query parameters using navigate
-      navigate(window.location.pathname, { replace: true });
-    }
-  }, [location]);
-  
+    // Also clear the query parameters using navigate
+    navigate(window.location.pathname, { replace: true });
+  }
+}, [location]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -72,6 +81,11 @@ const LoginForm: React.FC = () => {
         ...errors,
         [e.target.name]: undefined
       });
+    }
+
+    // Reset blocked state when user tries again
+    if (isAccountBlocked) {
+      setIsAccountBlocked(false);
     }
   };
 
@@ -103,6 +117,11 @@ const LoginForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); // Critical to prevent page refresh
+    
+    // Don't proceed if account is blocked
+    if (isAccountBlocked) {
+      return;
+    }
     
     // Clear previous error states
     setGeneralError("");
@@ -145,8 +164,13 @@ const LoginForm: React.FC = () => {
           navigate("/dashboard");
         }, 1500);
       } else {
-        // Handle error responses
-        if (data.errors) {
+        // Check for account deactivated (status code 403)
+        if (response.status === 403 && data.error === "ACCOUNT_DEACTIVATED") {
+          setIsAccountBlocked(true);
+          setGeneralError("Your account has been deactivated. Please contact support for assistance.");
+        } 
+        // Handle other error responses
+        else if (data.errors) {
           console.log("Setting field errors:", data.errors);
           setErrors(data.errors);
         } else if (data.message) {
@@ -172,8 +196,27 @@ const LoginForm: React.FC = () => {
         Access your dashboard and manage your campaigns.
       </p>
 
-      {/* General error alert */}
-      {generalError && (
+      {/* Account Blocked Alert - Special styling */}
+      {isAccountBlocked && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Account Deactivated</h3>
+              <div className="mt-1 text-sm text-red-700">
+                <p>Your account has been deactivated. Please contact support for assistance.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* General error alert (not for blocked accounts) */}
+      {generalError && !isAccountBlocked && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 relative" role="alert">
           <span className="block sm:inline">{generalError}</span>
         </div>
@@ -196,9 +239,10 @@ const LoginForm: React.FC = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
+            disabled={isAccountBlocked}
             className={`block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 border focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
               errors.email ? 'border-2 border-red-500' : 'border-gray-300'
-            }`}
+            } ${isAccountBlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
           {errors.email && (
             <p className="text-red-500 text-xs mt-1">{errors.email}</p>
@@ -215,9 +259,10 @@ const LoginForm: React.FC = () => {
             name="password"
             value={formData.password}
             onChange={handleChange}
+            disabled={isAccountBlocked}
             className={`block w-full rounded-md bg-white px-3.5 py-2 text-base text-gray-900 border focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
               errors.password ? 'border-2 border-red-500' : 'border-gray-300'
-            }`}
+            } ${isAccountBlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
           />
           {errors.password && (
             <p className="text-red-500 text-xs mt-1">{errors.password}</p>
@@ -230,8 +275,9 @@ const LoginForm: React.FC = () => {
               type="button"
               className={`relative flex w-10 h-5 cursor-pointer items-center rounded-full transition duration-300 ${
                 isChecked ? "bg-green-600" : "bg-gray-300"
-              }`}
-              onClick={() => setIsChecked(!isChecked)}
+              } ${isAccountBlocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+              onClick={() => !isAccountBlocked && setIsChecked(!isChecked)}
+              disabled={isAccountBlocked}
             >
               <span className="sr-only">Remember me</span>
               <span
@@ -241,23 +287,41 @@ const LoginForm: React.FC = () => {
               ></span>
             </button>
 
-            <label className="ml-3 text-sm text-gray-600">Remember me</label>
+            <label className={`ml-3 text-sm text-gray-600 ${isAccountBlocked ? 'opacity-60' : ''}`}>
+              Remember me
+            </label>
           </div>
 
-          <a href="/forgot-password" className="text-sm text-green-600">
+          <a href="/forgot-password" className={`text-sm text-green-600 ${isAccountBlocked ? 'opacity-60 pointer-events-none' : 'hover:underline'}`}>
             Forgot password?
           </a>
         </div>
 
         <button
           type="submit"
-          className="w-full p-2 rounded-md font-semibold bg-green-600 text-white hover:bg-green-700 transition disabled:opacity-70 disabled:cursor-not-allowed"
-          disabled={isLoading}
+          className={`w-full p-2 rounded-md font-semibold ${
+            isAccountBlocked 
+              ? 'bg-red-600 text-white opacity-70 cursor-not-allowed' 
+              : 'bg-green-600 text-white hover:bg-green-700'
+          } transition disabled:opacity-70 disabled:cursor-not-allowed`}
+          disabled={isLoading || isAccountBlocked}
         >
-          {isLoading ? "Logging in..." : "Login"}
+          {isLoading 
+            ? "Logging in..." 
+            : isAccountBlocked 
+              ? "Login Disabled" 
+              : "Login"
+          }
         </button>
 
-        {/* Google OAuth login button */}
+        {/* Message for blocked accounts */}
+        {isAccountBlocked && (
+          <div className="text-sm text-center text-red-600">
+            Login disabled due to account deactivation.
+          </div>
+        )}
+
+        {/* Google OAuth login button - disabled for blocked accounts */}
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-300"></div>
@@ -268,8 +332,13 @@ const LoginForm: React.FC = () => {
         </div>
 
         <a
-          href={googleAuthUrl}
-          className="flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition w-full"
+          href={isAccountBlocked ? '#' : googleAuthUrl}
+          className={`flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md ${
+            isAccountBlocked 
+              ? 'opacity-60 cursor-not-allowed' 
+              : 'hover:bg-gray-50'
+          } transition w-full`}
+          onClick={e => isAccountBlocked && e.preventDefault()}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path
@@ -294,7 +363,7 @@ const LoginForm: React.FC = () => {
 
         <p className="text-sm text-gray-600 text-center">
           Don't have an account?{" "}
-          <a href="/signup" className="text-green-600">
+          <a href="/signup" className={`text-green-600 ${isAccountBlocked ? 'opacity-60 pointer-events-none' : 'hover:underline'}`}>
             Sign up
           </a>
         </p>

@@ -11,6 +11,21 @@ html {
   --color-dark: #232c33;
   --color-yellow: #f9a620;
   --color-red: #cc2936;
+
+  --color-teal: #1f7f8c; /* Deep teal for calm accent */
+
+  --color-olive: #6c8e47; /* Earthy olive green to match your primary green */
+  --color-peach: #ffcb9a; /* Soft peach as a neutral pastel */
+  --color-cream: #fffaf0; /* Light cream to blend with --color-light */
+  --color-sand: #d9cba3; /* Muted sand beige, soft and neutral */
+  --color-charcoal: #2f3e46; /* Slightly lighter than --color-dark */
+  --color-rose: #e76f51; /* Soft rose as a warm companion to red */
+  --color-indigo: #3f51b5; /* Muted blue-purple for depth or callouts */
+  --color-brown: #5e503f; /* Warm deep brown for grounding contrast */
+  --color-peach: #ffcb9a;   /* Soft and pastel, great for cards or highlights */
+  --color-cream: #fffaf0;   /* Very light cream, excellent for full background */
+  --color-sand: #d9cba3;    /* Light beige tone, smooth and neutral */
+  --color-sky: #5fa8d3;  
   --font-display: "Inter", sans-serif;
 }
 
@@ -142,4 +157,9 @@ html {
 }
 .animate-fadeIn {
   animation: fadeIn 0.2s ease-out forwards;
+}
+
+/* Add this to your CSS */
+.modal-dropdown .headlessui-listbox-options {
+  z-index: 100 !important; /* Very high z-index */
 }

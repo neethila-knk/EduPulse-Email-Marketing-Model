@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 
 interface ToastProps {
   message: string;
-  type?: "success" | "error" | "info";
+  type?: "success" | "error" | "info" | "warning";
   duration?: number;
   onClose: () => void;
 }
@@ -11,11 +11,11 @@ interface ToastProps {
 const Toast: React.FC<ToastProps> = ({
   message,
   type = "info",
-  duration = 3000,
+  duration = 5000, // Updated default duration to 5000ms (5 seconds)
   onClose,
 }) => {
   useEffect(() => {
-    // Auto-dismiss the toast after duration
+    // Auto-dismiss the toast after the specified duration
     const timer = setTimeout(() => {
       onClose();
     }, duration);

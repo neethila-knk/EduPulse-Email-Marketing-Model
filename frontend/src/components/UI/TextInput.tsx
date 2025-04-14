@@ -1,8 +1,8 @@
-// components/UI/TextInput.tsx
 import React from "react";
 
 interface TextInputProps {
   id: string;
+  name?: string;
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -17,6 +17,7 @@ interface TextInputProps {
 
 const TextInput: React.FC<TextInputProps> = ({
   id,
+  name,
   label,
   value,
   onChange,
@@ -28,16 +29,50 @@ const TextInput: React.FC<TextInputProps> = ({
   labelClassName = "text-sm font-medium",
   disabled = false,
 }) => {
+  // Check if we're using vertical layout
+  const isVertical = className.includes("!flex-col");
+
+  if (isVertical) {
+    // Use a layout similar to PasswordInput for vertical layout
+    return (
+      <div className={`mb-4 ${className}`}>
+        <label htmlFor={id} className={`block text-sm font-medium text-gray-700 ${labelClassName}`}>
+          {label} {required && <span className="text-red-500">*</span>}
+        </label>
+        <div className="mt-1">
+          <input
+            id={id}
+            name={name || id}
+            type={type}
+            value={value}
+            onChange={onChange}
+            placeholder={placeholder}
+            required={required}
+            disabled={disabled}
+            className={`block w-full px-3.5 py-2  border ${
+              error ? "border-red-500" : "border-gray-300"
+            } rounded-md bg-white focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 sm:text-sm ${
+              disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "text-gray-700"
+            }`}
+          />
+          {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  // Original layout for horizontal/responsive mode
   return (
     <div className={`flex flex-col md:flex-row md:items-center mb-4 ${className}`}>
       <div className="md:w-1/4 mb-1 md:mb-0">
         <label htmlFor={id} className={`block ${labelClassName} text-gray-700`}>
-          {label}
+          {label} {required && <span className="text-red-500">*</span>}
         </label>
       </div>
       <div className="md:w-3/4">
         <input
           id={id}
+          name={name || id}
           type={type}
           value={value}
           onChange={onChange}
@@ -46,10 +81,8 @@ const TextInput: React.FC<TextInputProps> = ({
           disabled={disabled}
           className={`w-full px-3 py-2 border ${
             error ? "border-red-500" : "border-gray-300"
-          } rounded-md focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 ${
-            disabled
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "text-gray-700"
+          } rounded-md  focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 sm:text-sm ${
+            disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "text-gray-700"
           }`}
         />
         {error && <p className="mt-1 text-sm text-red-500">{error}</p>}

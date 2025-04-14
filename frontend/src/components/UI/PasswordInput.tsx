@@ -1,27 +1,27 @@
-// Update your PasswordInput component to include the disabled property
-
 import { useState } from "react";
 
 interface PasswordInputProps {
   id: string;
+  name?: string; // Add name property
   label: string;
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   error?: string;
   required?: boolean;
-  disabled?: boolean; // Add this property
+  disabled?: boolean;
 }
 
 const PasswordInput: React.FC<PasswordInputProps> = ({
   id,
+  name, // Add name to props destructuring
   label,
   value,
   onChange,
   placeholder,
   error,
   required = false,
-  disabled = false, // Add default value
+  disabled = false,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -33,15 +33,16 @@ const PasswordInput: React.FC<PasswordInputProps> = ({
       <div className="relative mt-1">
         <input
           id={id}
+          name={name || id} // Use name prop or fall back to id
           type={showPassword ? "text" : "password"}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
           required={required}
           disabled={disabled}
-          className={`block w-full px-3 py-2 border ${
+          className={`block w-full px-3.5 py-2 border ${
             error ? "border-red-300" : "border-gray-300"
-          } rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm ${
+          } rounded-md bg-white focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 sm:text-sm ${
             disabled ? "bg-gray-100 cursor-not-allowed" : ""
           }`}
         />
