@@ -73,7 +73,8 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
       }
       
       // Attach user info to request
-      req.user = user;
+      req.user = user as Express.User;
+
       next();
     })
     .catch(err => {

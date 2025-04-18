@@ -90,16 +90,15 @@ const VisualizationsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="mt-6 bg-blue-50 p-4 rounded-md">
-                <h3 className="text-lg font-medium text-blue-800 mb-2">
+              <div className="mt-6 bg-green-50 p-4 rounded-md">
+                <h3 className="text-lg font-medium text-green mb-2">
                   Visualization Tips
                 </h3>
-                <ul className="list-disc pl-5 text-blue-700 space-y-1">
-                  <li>Hover over clusters to see details about each segment</li>
-                  <li>Click on a cluster to focus and see more information</li>
+                <ul className="list-disc pl-5 text-green-800 space-y-1">
+                  <li>Hover over charts to see details about each segment</li>
+                  <li>Select a cluster to focus and see more information</li>
                   <li>
-                    Use the visualization controls to zoom in/out or reset the
-                    view
+                    Use the visualizations to make decisions
                   </li>
                   <li>
                     Different colors represent different audience categories
@@ -119,8 +118,7 @@ const VisualizationsPage: React.FC = () => {
                   <li>Segment size indicates subscriber volume</li>
                   <li>Proximity between clusters shows similarity</li>
                   <li>Color groupings reveal similar engagement patterns</li>
-                  <li>
-                    Click on specific segments to target them in campaigns
+                  <li>Zero in on high-value segments for custom campaigns
                   </li>
                 </ul>
               </div>
@@ -133,25 +131,25 @@ const VisualizationsPage: React.FC = () => {
                 </p>
                 <div className="space-y-3">
                   <Button
-                    onClick={() => navigate("/admin/campaigns/new")}
+                    onClick={() => navigate("/admin/clustering")}
                     variant="primary"
                     className="w-full justify-center"
                   >
-                    Create Targeted Campaign
+                    Segment More Emails
                   </Button>
                   <Button
                     onClick={() => navigate("/admin/dashboard")}
-                    variant="secondary"
+                    variant="password"
                     className="w-full justify-center"
                   >
-                    Upload More Data
+                    Manage Audience Segments
                   </Button>
                   <Button
                     onClick={() => window.print()}
-                    variant="outline"
+                    variant="password"
                     className="w-full justify-center"
                   >
-                    Export Visualization
+                    See Performance
                   </Button>
                 </div>
               </div>

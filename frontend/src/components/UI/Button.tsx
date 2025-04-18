@@ -37,7 +37,7 @@ const Button: React.FC<ExtendedButtonProps> = ({
     secondary:
       "bg-white hover:bg-gray-50 text-green hover:text-dark border border-green button-shadow",
     pending:
-      "bg-white hover:bg-gray-50 text-yellow hover:text-dark border border-green button-shadow",
+      "bg-white hover:bg-gray-50 text-yellow-600 hover:text-dark border border-green button-shadow",
     cancel:
       "bg-white hover:bg-gray-50 text-red-500 hover:text-red-600 border border-red-500 button-shadow",
     outline:
@@ -46,6 +46,9 @@ const Button: React.FC<ExtendedButtonProps> = ({
     password:
       "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 button-shadow",
     block: "bg-orange-600 hover:bg-orange-700 text-white button-shadow",
+
+    campaigncancel:
+    "bg-white hover:bg-gray-50 text-red hover:text-dark border border-green button-shadow",
   };
   const sizeClasses = {
     xsm: "px-2 py-1 text-sm",

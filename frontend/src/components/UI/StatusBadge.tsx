@@ -5,9 +5,10 @@ import { StatusBadgeProps } from '../../types';
 const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const statusStyles = {
     pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-    ongoing: 'bg-gray-800 text-white border-gray-700',
+    ongoing: 'bg-orange-100 text-orange-800 border-orange-200',
     completed: 'bg-green-600 text-white border-green-500',
     canceled: 'bg-gray-100 text-gray-800 border-gray-200',
+    sent: 'bg-yellow-100 text-yellow-800 border-yellow-200',
   };
 
   return (

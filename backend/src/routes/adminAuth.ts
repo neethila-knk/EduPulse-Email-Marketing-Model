@@ -12,6 +12,7 @@ import {
 } from "../middleware/adminAuthMiddleware";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
+import { getDashboardStats, getNodeHealth, getRecentActivity, getSystemStatus } from "../controllers/adminController";
 
 const router = express.Router();
 
@@ -602,5 +603,13 @@ router.delete(
     }
   }
 );
+
+
+router.get("/dashboard/stats", authenticateAdminJWT, getDashboardStats);
+router.get("/dashboard/stats",authenticateAdminJWT, getDashboardStats);
+router.get("/dashboard/activity", authenticateAdminJWT, getRecentActivity);
+router.get("/status", authenticateAdminJWT, getSystemStatus);
+router.get("/health", getNodeHealth);
+
 
 export default router;

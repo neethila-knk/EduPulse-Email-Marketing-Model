@@ -28,51 +28,59 @@ const CampaignsPage: React.FC = () => {
     {
       id: '1',
       name: 'Software engineering diploma',
+      campaignName: 'Software engineering diploma',
       emailCount: 1000,
       status: 'pending',
     },
     {
       id: '2',
       name: 'Mixing and mastering course',
+      campaignName: 'Mixing and mastering course',
       emailCount: 500,
       status: 'canceled',
     },
     {
       id: '3',
       name: 'Music producing free course',
+      campaignName: 'Music producing free course',
       emailCount: 5000,
       status: 'completed',
     },
     {
       id: '4',
       name: 'Computer hardware workshop',
+      campaignName: 'Computer hardware workshop',
       emailCount: 2500,
       status: 'ongoing',
     },
     {
       id: '5',
       name: 'Data science certification',
+      campaignName: 'Data science certification',
       emailCount: 3200,
       status: 'pending',
     },
     {
       id: '6',
       name: 'Web development bootcamp',
+      campaignName: 'Web development bootcamp',
       emailCount: 4500,
       status: 'completed',
     },
     {
       id: '7',
       name: 'UI/UX design workshop',
+      campaignName: 'UI/UX design workshop',
       emailCount: 1800,
       status: 'ongoing',
     },
     {
       id: '8',
       name: 'AI and machine learning course',
+      campaignName: 'AI and machine learning course',
       emailCount: 2100,
       status: 'pending',
-    },
+    }
   ];
 
   useEffect(() => {
@@ -198,9 +206,9 @@ const CampaignsPage: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 text-xs font-medium rounded-md ${
-                          campaign.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                          campaign.status === 'sent' ? 'bg-yellow-100 text-yellow-800' :
                           campaign.status === 'ongoing' ? 'bg-gray-800 text-white' :
-                          campaign.status === 'completed' ? 'bg-green-600 text-white' :
+                          campaign.status === 'completed' ? 'bg-red text-white' :
                           'bg-gray-100 text-gray-800'
                         }`}>
                           {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}

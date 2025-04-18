@@ -27,6 +27,8 @@ import VisualizationsPage from "./pages/admin/VisualizationsPage";
 import AdminModelPerformance from "./pages/admin/ModelPerformance";
 import UserManagement from "./pages/admin/UserManagement";
 import AdminManagement from "./pages/admin/AdminManagement";
+import CampaignsList from "./pages/CampaignList";
+import CampaignDetails from "./pages/CampaignAnalytics";
 
 const App = () => {
   return (
@@ -45,6 +47,15 @@ const App = () => {
           />
           <Route path="/oauth-success" element={<OAuthSuccess />} />
 
+          <Route
+            path="/campaigns/:id"
+            element={
+              <ProtectedRoute>
+                <CampaignDetails />{" "}
+              </ProtectedRoute>
+            }
+          />
+
           {/* User Protected Routes */}
           <Route
             path="/dashboard"
@@ -58,15 +69,7 @@ const App = () => {
             path="/campaigns"
             element={
               <ProtectedRoute>
-                <CampaignsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/campaigns"
-            element={
-              <ProtectedRoute>
-                <CampaignsPage />
+                <CampaignsList />
               </ProtectedRoute>
             }
           />

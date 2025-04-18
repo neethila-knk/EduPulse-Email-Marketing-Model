@@ -1,52 +1,55 @@
-import React from 'react';
+import React from "react";
 
 interface CircularProgressChartProps {
   percentage: number;
   title: string;
   subtitle?: string;
-  color: string;
+  color?: string;
 }
 
-/**
- * A reusable circular progress chart component
- * 
- * @param percentage - The percentage value to display (0-100)
- * @param title - The title of the chart
- * @param subtitle - Optional subtitle to display beneath the title
- * @param color - The color of the progress arc (hex code)
- */
-const CircularProgressChart: React.FC<CircularProgressChartProps> = ({ 
-  percentage, 
-  title, 
-  subtitle, 
-  color 
+const CircularProgressChart: React.FC<CircularProgressChartProps> = ({
+  percentage,
+  title,
+  subtitle,
+  color,
 }) => {
-  // Calculate the circumference of the circle
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+  // Cap at 100% for full circle visualization
+  const displayPercentage = percentage > 999 ? 999 : percentage;
+  const strokeDashoffset =
+    circumference - Math.min(displayPercentage, 100) / 100 * circumference;
+
+  const getDynamicColor = () => {
+    if (title.includes("Open")) {
+      return percentage >= 25 ? "#16a34a" : percentage >= 15 ? "#facc15" : "#dc2626";
+    } else if (title.includes("Click")) {
+      return percentage >= 4 ? "#16a34a" : percentage >= 2 ? "#facc15" : "#dc2626";
+    } else if (title.includes("Conversion")) {
+      return percentage >= 5 ? "#16a34a" : percentage >= 1 ? "#facc15" : "#dc2626";
+    }
+    return color;
+  };
 
   return (
-    <div className="flex flex-col items-center">
-      {/* SVG for the circular progress */}
-      <div className="relative w-32 h-32 sm:w-36 sm:h-36 md:w-40 md:h-40 lg:w-44 lg:h-44 flex items-center justify-center">
-        {/* Background circle */}
+    <div className="flex flex-col items-center w-full">
+      <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] md:w-[180px] md:h-[180px]">
         <svg className="w-full h-full" viewBox="0 0 180 180">
           <circle
             cx="90"
             cy="90"
             r={radius}
             fill="none"
-            stroke={`${color}30`} // Lighter version of the color
+            stroke="#e5e7eb"
             strokeWidth="20"
           />
-          {/* Progress circle */}
           <circle
             cx="90"
             cy="90"
             r={radius}
             fill="none"
-            stroke={color}
+            stroke={getDynamicColor()}
             strokeWidth="20"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -54,15 +57,19 @@ const CircularProgressChart: React.FC<CircularProgressChartProps> = ({
             transform="rotate(-90 90 90)"
           />
         </svg>
-        {/* Percentage text in the center */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl sm:text-2xl md:text-3xl font-bold">{percentage}%</span>
+          <span className="font-bold text-[clamp(1rem,2vw,1.75rem)] leading-tight">
+            {percentage > 999 ? "999+" : `${percentage}%`}
+          </span>
         </div>
       </div>
-      {/* Title and subtitle below the chart */}
-      <h3 className="text-gray-800 font-semibold mt-4 text-center text-sm sm:text-base">{title}</h3>
+      <h3 className="text-gray-800 font-semibold mt-4 text-center text-sm sm:text-base">
+        {title}
+      </h3>
       {subtitle && (
-        <p className="text-gray-600 text-xs sm:text-sm text-center mt-1">{subtitle}</p>
+        <p className="text-gray-600 text-xs sm:text-sm text-center mt-1">
+          {subtitle}
+        </p>
       )}
     </div>
   );
