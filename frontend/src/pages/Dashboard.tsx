@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { authApi, isAuthenticated } from "../utils/authUtils";
+import { authApi, isAuthenticated, logout } from "../utils/authUtils";
+import { fetchCampaigns, normalizeCampaignData } from "../utils/campaignService";
 import Layout from "../components/Layout/Layout";
 import StatCard from "../components/UI/StatCard";
 import CampaignTable from "../components/Dashboard/CampaignTable";
@@ -8,6 +9,7 @@ import Button from "../components/UI/Button";
 import { Campaign } from "../types";
 import PageHeader from "../components/Layout/PageHeader";
 import overlayImage from "../assets/elements.svg";
+
 interface User {
   id: string;
   username: string;
@@ -19,7 +21,7 @@ interface AuthResponse {
   user: User;
 }
 
-// Email marketing insights to display randomly
+// Email marketing insights (unchanged)
 const emailMarketingInsights = [
   "Segmented email campaigns can increase engagement by 720%",
   "Personalized subject lines can boost open rates by 55%",
@@ -39,6 +41,8 @@ const emailMarketingInsights = [
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [dataError, setDataError] = useState<boolean>(false);
   const [alert, setAlert] = useState<{
     type: "success" | "error";
     message: string;
@@ -47,57 +51,16 @@ const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Sample data - this would come from your API
-  const stats = {
-    total: 18,
-    ongoing: 5,
-    pending: 12,
-    canceled: 2,
-  };
-
-  const campaigns: Campaign[] = [
-    {
-      id: "1",
-      name: "Software engineering diploma",
-      emailCount: 1000,
-      status: "pending",
-    },
-    {
-      id: "2",
-      name: "Mixing and mastering course",
-      emailCount: 500,
-      status: "canceled",
-    },
-    {
-      id: "3",
-      name: "Music producing free course",
-      emailCount: 5000,
-      status: "completed",
-    },
-    {
-      id: "4",
-      name: "Computer hardware workshop",
-      emailCount: 2500,
-      status: "ongoing",
-    },
-  ];
-
   useEffect(() => {
     document.title = "Dashboard | EduPulse";
-    // Get random insight when component mounts
-    const randomIndex = Math.floor(
-      Math.random() * emailMarketingInsights.length
-    );
-    setRandomInsight(emailMarketingInsights[randomIndex]);
+    setRandomInsight(emailMarketingInsights[Math.floor(Math.random() * emailMarketingInsights.length)]);
 
-    // Check for successful login message in state
+    // Show alerts from navigation state
     if (location.state && (location.state as any).message) {
       setAlert({
         type: "success",
         message: (location.state as any).message,
       });
-
-      // Clear the state after showing the message
       window.history.replaceState({}, document.title);
     }
 
@@ -109,42 +72,48 @@ const Dashboard: React.FC = () => {
       return;
     }
 
-    const fetchUserData = async () => {
+    // Load user data and campaigns
+    const loadDashboardData = async () => {
       try {
-        // Properly type the response
-        const response = await authApi.get<AuthResponse>("/auth/me");
-        setUser(response.data.user);
+        // First load user profile using user endpoint
+        const userResponse = await authApi.get<AuthResponse>("/auth/me");
+        setUser(userResponse.data.user);
+        
+        // Then load campaign data using the campaign service (which now uses the correct endpoint)
+        const { campaigns: campaignData, isError } = await fetchCampaigns();
+        
+        // Process campaign data to ensure it matches our expected format
+        const normalizedCampaigns = normalizeCampaignData(campaignData);
+        setCampaigns(normalizedCampaigns);
+        setDataError(isError);
       } catch (error) {
-        console.error("Error fetching user data:", error);
-        // If token is invalid, redirect to login
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        navigate("/login", {
-          state: { message: "Your session has expired. Please log in again." },
-        });
+        console.error("Error loading dashboard data:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchUserData();
+    loadDashboardData();
   }, [navigate, location]);
 
+  // Handle logout
   const handleLogout = async () => {
     try {
-      // Call the logout endpoint
-      await authApi.get("/auth/logout");
-
-      // Clear tokens from localStorage
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      localStorage.removeItem("user");
-
-      // Redirect to login
+      await logout();
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
+      navigate("/login");
     }
+  };
+
+  // Force refresh campaigns data
+  const refreshCampaigns = async () => {
+    setLoading(true);
+    const { campaigns: refreshedCampaigns, isError } = await fetchCampaigns();
+    setCampaigns(normalizeCampaignData(refreshedCampaigns));
+    setDataError(isError);
+    setLoading(false);
   };
 
   if (loading) {
@@ -163,7 +132,7 @@ const Dashboard: React.FC = () => {
     return "Good evening";
   };
 
-  // Create the greeting component
+  // Create greeting component
   const greetingComponent = (
     <div>
       <div className="text-lg font-medium mb-1">
@@ -193,6 +162,15 @@ const Dashboard: React.FC = () => {
     </div>
   );
 
+  // Calculate statistics from campaign data
+  const stats = {
+    total: campaigns.length,
+    ongoing: campaigns.filter(c => c.status === "ongoing").length,
+    sent: campaigns.filter(c => c.status === "sent").length, 
+    canceled: campaigns.filter(c => c.status === "canceled").length,
+    completed: campaigns.filter(c => c.status === "completed").length,
+  };
+
   return (
     <Layout onLogout={handleLogout} user={user}>
       {alert && (
@@ -213,12 +191,31 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Using the PageHeader with the overlayImage prop */}
+      {dataError && (
+        <div className="bg-yellow-100 text-yellow-800 p-4 rounded-md mx-6 mt-4 mb-3 flex justify-between items-center">
+          <div className="flex items-center">
+            <p>We had trouble loading your campaign data. Showing sample data instead.</p>
+            <button 
+              onClick={refreshCampaigns}
+              className="ml-3 bg-yellow-200 hover:bg-yellow-300 text-yellow-800 px-3 py-1 rounded text-sm"
+            >
+              Retry
+            </button>
+          </div>
+          <button
+            onClick={() => setDataError(false)}
+            className="text-sm font-medium"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="relative">
         <PageHeader
           title="My Email Campaigns"
           greeting={greetingComponent}
-           size="large"
+          size="large"
           action={
             <Button
               variant="secondary"
@@ -231,7 +228,6 @@ const Dashboard: React.FC = () => {
           overlayImage={overlayImage}
         />
 
-        {/* Stat cards that overlap the green background - now with better positioning */}
         <div className="container mx-auto px-6 relative -mt-20 z-20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard
@@ -250,10 +246,11 @@ const Dashboard: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20"
+                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                   />
                 </svg>
               }
+          
               iconColor="text-green-600"
             />
             <StatCard
@@ -272,20 +269,21 @@ const Dashboard: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M4 4v6h6M20 20v-6h-6M4 20l5-5M20 4l-5 5"
                   />
                 </svg>
               }
-              iconColor="text-gray-700"
+              
+              iconColor="text-orange-600"
             />
             <StatCard
-              title="Pending"
-              count={stats.pending}
-              description="Pending to proceed"
+              title="Needs Action"
+              count={stats.sent}
+              description="Waiting for an action"
               icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-8 w-8"
+                  className="h-8 w-8 text-yellow-500"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -294,10 +292,11 @@ const Dashboard: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M12 9v2m0 4h.01M12 5a9 9 0 100 18 9 9 0 000-18z"
                   />
                 </svg>
               }
+              
               iconColor="text-yellow-500"
             />
             <StatCard
@@ -316,21 +315,32 @@ const Dashboard: React.FC = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    d="M6 18L18 6M6 6l12 12"
                   />
                 </svg>
               }
+              
               iconColor="text-red-600"
             />
           </div>
         </div>
       </div>
-      {/* Campaign table */}
+
       <div className="container mx-auto px-6 mb-8 mt-10">
-        <CampaignTable
-          campaigns={campaigns}
-          onViewAll={() => navigate("/campaigns")}
-        />
+        {campaigns.length > 0 ? (
+          <CampaignTable
+            campaigns={campaigns}
+            onViewAll={() => navigate("/campaigns")}
+          />
+        ) : (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <h3 className="text-xl font-medium text-gray-800 mb-2">No campaigns yet</h3>
+            <p className="text-gray-600 mb-4">Start creating your first email campaign to engage with your audience.</p>
+            <Button variant="primary" onClick={() => navigate("/new-campaign")}>
+              Create Your First Campaign
+            </Button>
+          </div>
+        )}
       </div>
     </Layout>
   );

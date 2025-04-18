@@ -3,8 +3,17 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import User from "../models/User";
 import Admin from "../models/Admin";
+
+// Helper to ensure ID compatibility with Passport
+const ensureId = (doc: any) => {
+  if (doc && !doc.id && doc._id) {
+    doc.id = doc._id.toString();
+  }
+  return doc;
+};
 
 // Local Strategy
 passport.use(
@@ -21,7 +30,7 @@ passport.use(
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) return done(null, false, { message: "Incorrect password" });
 
-      return done(null, user);
+      return done(null, ensureId(user));
     } catch (err) {
       return done(err);
     }
@@ -46,7 +55,7 @@ passport.use("admin-local", new LocalStrategy(
       const isMatch = await bcrypt.compare(password, admin.password);
       if (!isMatch) return done(null, false, { message: "Incorrect password" });
 
-      return done(null, admin);
+      return done(null, ensureId(admin));
     } catch (err) {
       return done(err);
     }
@@ -69,7 +78,7 @@ passport.use("admin-jwt", new JwtStrategy(
         return done(null, false);
       }
       
-      return done(null, admin);
+      return done(null, ensureId(admin));
     } catch (error) {
       return done(error, false);
     }
@@ -87,7 +96,7 @@ passport.use(
       try {
         const user = await User.findById(payload.id);
         if (!user) return done(null, false);
-        return done(null, user);
+        return done(null, ensureId(user));
       } catch (error) {
         return done(error, false);
       }
@@ -125,7 +134,7 @@ passport.use(
           // Update tokens on login
           user.googleTokens = googleTokens;
           await user.save();
-          return done(null, user);
+          return done(null, ensureId(user));
         }
 
         // Check if user exists with same email
@@ -167,21 +176,35 @@ passport.use(
           isActive: true // Ensure new users are active by default
         });
 
-        return done(null, newUser);
+        return done(null, ensureId(newUser));
       } catch (error) {
         return done(error, false);
       }
     }
   )
 );
-// For existing session-based auth
-passport.serializeUser((user: any, done) => done(null, user.id));
 
-passport.deserializeUser(async (id, done) => {
+// For existing session-based auth
+passport.serializeUser((user: any, done) => {
+  done(null, user.id || user._id.toString());
+});
+
+passport.deserializeUser(async (id: string, done) => {
   try {
-    const user = await User.findById(id);
-    done(null, user);
+    // Try to find user first
+    let user = await User.findById(id);
+    
+    // If not a user, try to find admin
+    if (!user) {
+      const admin = await Admin.findById(id);
+      if (admin) {
+        return done(null, ensureId(admin));
+      }
+      return done(null, false);
+    }
+    
+    return done(null, ensureId(user));
   } catch (err) {
-    done(err);
+    return done(err, false);
   }
 });

@@ -18,6 +18,7 @@ interface CustomSelectProps {
   length?: "full" | "1/2" | "1/3" | "1/4";
   label?: string;
   showCount?: boolean;
+  disabled?: boolean;
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -29,6 +30,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   length = "full",
   label,
   showCount = true,
+ 
 }) => {
   const selected = options.find((o) => o.value === value);
 

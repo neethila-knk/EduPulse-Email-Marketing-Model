@@ -4,18 +4,24 @@ export interface Campaign {
   id: string;
   name: string;
   emailCount: number;
-  status: 'pending' | 'ongoing' | 'completed' | 'canceled';
+  status: 'pending' | 'ongoing' | 'completed' | 'canceled' | "sent";
+
+  campaignName: string;
+  clusterName?: string;
+  createdAt?: string;
+  sentAt?: string;
 }
 
 export interface StatCardProps {
-  label?: string;
-  value?: string;
   title?: string;
   count?: number;
-  description?: string;
+  label?: string;
+  value?: string | number;
+  description?: string | React.ReactNode;
   icon?: React.ReactNode;
   iconColor?: string;
-  loading?: boolean; // Added loading property
+  loading?: boolean;
+  content?: React.ReactNode; // Add this new property
 }
 
 export interface StatusBadgeProps {
@@ -23,7 +29,7 @@ export interface StatusBadgeProps {
 }
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'pending' | 'cancel' | 'danger' | 'password' | 'block';
+  variant?: 'primary' | 'secondary' | 'outline' | 'pending' | 'cancel' | 'danger' | 'password' | 'block' | 'campaigncancel';
   size?: 'xsm' | 'sm' | 'md' | 'lg';
   children: React.ReactNode;
 }

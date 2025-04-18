@@ -62,7 +62,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   };
 
   return (
-    <div className={`flex flex-col sm:flex-row gap-4 mb-4 ${className}`}>
+    <div className={`flex flex-col sm:flex-row mb-4 ${className}`}>
       {/* Label */}
       <div className="sm:w-1/4 w-full pt-2">
         <label htmlFor={id} className={`block ${labelClassName} text-gray-700`}>

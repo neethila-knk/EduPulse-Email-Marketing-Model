@@ -10,6 +10,7 @@ const StatCard: React.FC<StatCardProps> = ({
   icon,
   iconColor,
   loading = false,
+  content, // Add content prop without changing existing functionality
 }) => {
   const iconWrapperClass = iconColor || '';
 
@@ -28,6 +29,8 @@ const StatCard: React.FC<StatCardProps> = ({
               <h2 className="text-4xl font-bold text-gray-800">{count || value}</h2>
               <h3 className="text-lg font-semibold text-gray-700 mt-1">{title || label}</h3>
               {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
+              {/* Render content if provided */}
+              {content && <div className="mt-2">{content}</div>}
             </>
           )}
         </div>

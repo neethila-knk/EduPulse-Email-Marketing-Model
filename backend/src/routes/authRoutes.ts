@@ -191,10 +191,21 @@ router.post("/login", async (req: Request, res: Response, next: NextFunction): P
 router.get(
   "/logout",
   authenticateJWT,
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) : Promise<void> => {
     try {
       if (req.user) {
-        const user = req.user as UserDocument;
+        const userId = req.user?._id;
+
+const user = await User.findById(userId); // ✅ Returns full UserDocument
+
+if (!user) {
+  res.status(404).json({ message: "User not found" });
+  return;
+}
+
+// Now `user` is correctly typed as UserDocument
+await user.save();
+
 
         // Revoke Google OAuth token if present
         if (user.provider === 'google' && user.googleTokens?.accessToken) {
@@ -288,7 +299,8 @@ router.get(
   async (req: Request, res: Response): Promise<void> => {
     try {
       // New version with type assertion
-      const userId = (req.user as UserDocument)._id;
+      const userId = req.user?._id?.toString(); // ✅ This avoids the TS error
+
       const user = await User.findById(userId).select(
         "-password -refreshToken"
       );

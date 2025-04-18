@@ -6,7 +6,12 @@ import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import FormData from "form-data";
 import csv from "csv-parser";
-import { getPerformanceMetrics, compareAlgorithms, getPipelineMetrics, storePipelineMetrics } from '../controllers/performanceMetricsController';
+import {
+  getPerformanceMetrics,
+  compareAlgorithms,
+  getPipelineMetrics,
+  storePipelineMetrics,
+} from "../controllers/performanceMetricsController";
 
 dotenv.config();
 const router = express.Router();
@@ -180,7 +185,6 @@ router.post(
     try {
       console.log(`Processing uploaded file: ${fileName}`);
 
-      // Step 1: Extract emails from CSV and filter existing ones
       const { records: csvRecords } = await extractEmailsFromCSV(filePath);
       console.log(`Extracted ${csvRecords.length} records from CSV`);
 
@@ -202,17 +206,14 @@ router.post(
         return;
       }
 
-      // Step 2: Create a new CSV with only new records
       filteredFilePath = await saveFilteredCSV(newRecords, filePath);
 
-      // Step 3: Create form data with filtered CSV
       const formData = new FormData();
       formData.append("file", fs.createReadStream(filteredFilePath), {
         filename: req.file.originalname,
         contentType: req.file.mimetype,
       });
 
-      // Create dataset record before processing
       const datasetId = await createDatasetRecord(
         fileName,
         csvRecords.length,
@@ -222,27 +223,27 @@ router.post(
         throw new Error("Failed to create dataset record");
       }
 
-      // Step 4: Call Python clustering service with filtered data
-      const response = await axios.post<{
+      interface ClusteringResponse {
         records: any[];
-        visualization_data: any;
-        cluster_analysis: any;
-        metrics: any;
-        tsne_data: any;
-      }>("http://localhost:8000/cluster", formData, {
-        headers: formData.getHeaders(),
-        timeout: 300000, // 5 minutes timeout for large files
-        ...({
+        visualization_data?: any;
+        cluster_analysis?: any;
+        metrics?: any;
+        tsne_data?: any;
+      }
+
+      const response = await axios.post<ClusteringResponse>(
+        "http://localhost:8000/cluster",
+        formData,
+        {
+          headers: formData.getHeaders(),
+          timeout: 300000,
           maxContentLength: Infinity,
           maxBodyLength: Infinity,
-        } as any),
-      });
+        } as any
+      );
 
-      // In paste.txt, around line 363-371, update the code:
       const { records, visualization_data, cluster_analysis, metrics } =
-        response.data;
-
-      // Extract t-SNE data from records if they contain coordinates
+        response.data as ClusteringResponse;
       const extractedTSNEData = records
         .filter((r) => r.x !== undefined && r.y !== undefined)
         .map((r) => ({
@@ -253,18 +254,11 @@ router.post(
           university_name: r.university_name || null,
         }));
 
-      console.log(
-        "📊 Extracted t-SNE data from records:",
-        extractedTSNEData.length
-      );
-
-      // Create final visualization data with t-SNE data from records
       const fixedVisualizationData = {
         ...(visualization_data || {}),
         tsne_data: extractedTSNEData.length > 0 ? extractedTSNEData : null,
       };
 
-      // Step 6: Store visualization data
       if (visualization_data) {
         await visualizationCollection.insertOne({
           datasetId,
@@ -275,54 +269,51 @@ router.post(
         });
       }
 
-      // Step 7: Process clusters with enhanced naming
       const clusterData: any[] = [];
 
       if (cluster_analysis && cluster_analysis.cluster_names) {
         const clusterNames = cluster_analysis.cluster_names;
         const clusterMetadata = cluster_analysis.cluster_metadata || {};
 
-        // Enhance cluster names to indicate they're from a new import
         for (const [clusterId, originalName] of Object.entries(clusterNames)) {
           const clusterMetadataObj = clusterMetadata[clusterId] || {};
-          const clusterEmailCount = records.filter(
-            (r) => r.stage2_cluster.toString() === clusterId
-          ).length;
 
-          // Create meaningful name that indicates this is from a new import
-          // Format: Original name + " (Added Apr 2025)"
+          const clusterRecords = records.filter(
+            (r: { stage2_cluster: string | number }) =>
+              String(r.stage2_cluster) === String(clusterId)
+          );
+
+          const clusterEmailCount = clusterRecords.length;
+          const emailsForCluster = clusterRecords.map(
+            (r: { Email: string }) => r.Email
+          );
+
           const todayStr = new Date().toLocaleDateString("en-US", {
             month: "short",
             year: "numeric",
           });
           const enhancedName = `${originalName} (Added ${todayStr})`;
 
-          // Extract domain and keyword distributions for this specific cluster
-          const clusterRecords = records.filter(
-            (r) => r.stage2_cluster.toString() === clusterId
-          );
           const domainDist: Record<string, number> = {};
           const keywordDist: Record<string, number> = {};
 
-          // Calculate distributions from records
-          clusterRecords.forEach((record) => {
-            // Count domain types
-            if (record.domain_type) {
-              domainDist[record.domain_type] =
-                (domainDist[record.domain_type] || 0) + 1;
+          clusterRecords.forEach(
+            (record: { domain_type?: string; "Keyword Category"?: string }) => {
+              if (record.domain_type) {
+                domainDist[record.domain_type] =
+                  (domainDist[record.domain_type] || 0) + 1;
+              }
+              if (record["Keyword Category"]) {
+                keywordDist[record["Keyword Category"]] =
+                  (keywordDist[record["Keyword Category"]] || 0) + 1;
+              }
             }
-
-            // Count keyword categories
-            if (record["Keyword Category"]) {
-              keywordDist[record["Keyword Category"]] =
-                (keywordDist[record["Keyword Category"]] || 0) + 1;
-            }
-          });
+          );
 
           clusterData.push({
             datasetId,
             cluster_id: parseInt(clusterId),
-            name: enhancedName, // Use enhanced name for clarity
+            name: enhancedName,
             size: clusterEmailCount,
             description: `${
               clusterMetadataObj.audience_description || `Cluster ${clusterId}`
@@ -337,24 +328,25 @@ router.post(
             top_universities: clusterMetadataObj.top_universities || {},
             domain_distribution: domainDist,
             keyword_distribution: keywordDist,
+            emails: emailsForCluster,
             createdAt: new Date(),
-            isNewImport: true, // Flag to distinguish from original clusters
+            isNewImport: true,
             status: "active",
           });
         }
 
-        // Insert cluster data
         if (clusterData.length > 0) {
           await clusterCollection.insertMany(clusterData);
         }
       }
 
-      // Insert email data with reference to dataset FIRST - this is critical!
-      const enhancedRecords = records.map((r) => ({
-        ...r,
-        datasetId,
-        addedDate: new Date(), // Track when this email was added
-      }));
+      const enhancedRecords = records.map(
+        (r: { [key: string]: any; cluster_name: string }) => ({
+          ...r,
+          datasetId,
+          addedDate: new Date(),
+        })
+      );
 
       if (enhancedRecords.length > 0) {
         await emailCollection.insertMany(enhancedRecords);
@@ -363,10 +355,9 @@ router.post(
         );
       }
 
-      // NOW process university clusters - this order is important!
+      // ✅ Reinsert university cluster logic
       let universityDataInserted = false;
 
-      // First try to use university clusters from clustering algorithm
       if (
         cluster_analysis &&
         cluster_analysis.university_clusters &&
@@ -382,84 +373,12 @@ router.post(
           })
         );
 
-        console.log(
-          `Found ${universityClusters.length} university clusters from algorithm`
-        );
-
-        if (universityClusters.length > 0) {
-          await universityCollection.insertMany(universityClusters);
-          universityDataInserted = true;
-          console.log("Inserted university clusters from algorithm data");
-        }
+        await universityCollection.insertMany(universityClusters);
+        universityDataInserted = true;
+        console.log("Inserted university clusters from clustering output.");
       }
 
-      // If no university data from algorithm, extract from emails in the database
       if (!universityDataInserted) {
-        console.log(
-          "No university clusters from algorithm, extracting from database..."
-        );
-
-        try {
-          const universityEmails = await emailCollection
-            .aggregate([
-              {
-                $match: {
-                  university_name: {
-                    $exists: true,
-                    $ne: null,
-                    $nin: [null, "", "None", "Unknown"],
-                  },
-                },
-              },
-              {
-                $group: {
-                  _id: "$university_name",
-                  count: { $sum: 1 },
-                  sampleEmail: { $first: "$Email" },
-                  domain: { $first: "$domain" },
-                },
-              },
-              { $sort: { count: -1 } },
-            ])
-            .toArray();
-
-          console.log(
-            `Found ${universityEmails.length} universities from database aggregation`
-          );
-
-          if (universityEmails && universityEmails.length > 0) {
-            const universities = universityEmails.map((item) => ({
-              datasetId,
-              university: item._id,
-              count: item.count,
-              sample:
-                item.domain ||
-                (item.sampleEmail ? item.sampleEmail.split("@")[1] : "unknown"),
-              createdAt: new Date(),
-              isNewImport: true,
-            }));
-
-            if (universities.length > 0) {
-              await universityCollection.insertMany(universities);
-              universityDataInserted = true;
-              console.log(
-                `Inserted ${universities.length} university clusters from database extraction`
-              );
-            }
-          }
-        } catch (dbError) {
-          console.error(
-            "Error extracting universities from database:",
-            dbError
-          );
-        }
-      }
-
-      // Last resort: Extract directly from the records in memory
-      if (!universityDataInserted) {
-        console.log("Extracting university data directly from records...");
-
-        // Group by university name
         const universityEmails = new Map<
           string,
           { count: number; domains: Set<string> }
@@ -469,9 +388,7 @@ router.post(
           if (
             record.university_name &&
             record.university_name !== "None" &&
-            record.university_name !== "Unknown" &&
-            record.university_name !== null &&
-            record.university_name !== ""
+            record.university_name !== "Unknown"
           ) {
             const universityName = record.university_name;
             const domain =
@@ -491,7 +408,6 @@ router.post(
           }
         }
 
-        // Convert to array format for database insertion
         const extractedUniversityClusters = Array.from(
           universityEmails.entries()
         ).map(([university, data]) => ({
@@ -506,17 +422,17 @@ router.post(
         }));
 
         if (extractedUniversityClusters.length > 0) {
-          console.log(
-            `Extracted ${extractedUniversityClusters.length} university clusters directly from emails`
-          );
           await universityCollection.insertMany(extractedUniversityClusters);
-          universityDataInserted = true;
+          console.log(
+            `Inserted ${extractedUniversityClusters.length} university clusters from records`
+          );
         } else {
-          console.log("No university data found in the email records");
+          console.log(
+            "No university clusters extracted from in-memory records."
+          );
         }
       }
 
-      // Count unique clusters for informational purposes
       const uniqueClusters = new Set(
         enhancedRecords.map((record) => record.cluster_name)
       );
@@ -527,10 +443,8 @@ router.post(
         existing: existingCount,
         clusters: uniqueClusters.size,
         datasetId,
-        universityDataExtracted: universityDataInserted,
         message: `Successfully added ${enhancedRecords.length} new emails to ${uniqueClusters.size} audience segments. ${existingCount} emails were already in the database.`,
       });
-      return;
     } catch (error) {
       console.error(
         "Error during clustering:",
@@ -540,9 +454,7 @@ router.post(
         error: "Clustering failed. Please try again.",
         details: error instanceof Error ? error.message : "Unknown error",
       });
-      return;
     } finally {
-      // Clean up temporary files
       for (const path of [filePath, filteredFilePath]) {
         if (path && fs.existsSync(path)) {
           fs.unlinkSync(path);
@@ -591,6 +503,9 @@ router.get("/available-clusters", async (_req: Request, res: Response) => {
       count: cluster.size,
       id: cluster._id,
       cluster_id: cluster.cluster_id,
+
+      emails: cluster.emails || [], // 👈 include this
+      status: cluster.status || "active",
       // Get domain distribution as a string for display
       sample: Object.keys(cluster.domain_distribution || {})[0] || "mixed",
     }));
@@ -746,8 +661,11 @@ router.get("/visualization-data", async (_req: Request, res: Response) => {
 
     console.log("📊 Found visualization data:", visualizationData._id);
     console.log("📊 Data keys:", Object.keys(visualizationData.data || {}));
-    console.log("📊 tsne_data present:", visualizationData.data && !!visualizationData.data.tsne_data);
-    
+    console.log(
+      "📊 tsne_data present:",
+      visualizationData.data && !!visualizationData.data.tsne_data
+    );
+
     res.json(visualizationData.data);
   } catch (error) {
     console.error("Error fetching visualization data:", error);
@@ -884,17 +802,19 @@ router.patch(
   }
 );
 
-
-router.get('/performance-metrics', async (req: Request, res: Response) => {
+router.get("/performance-metrics", async (req: Request, res: Response) => {
   await getPerformanceMetrics(req, res);
 });
-router.get('/model/compare-algorithms', async (req: Request, res: Response) => {
+router.get("/model/compare-algorithms", async (req: Request, res: Response) => {
   await compareAlgorithms(req, res);
 });
-router.get('/model/pipeline-metrics', async (req: Request, res: Response) => {
+router.get("/model/pipeline-metrics", async (req: Request, res: Response) => {
   await getPipelineMetrics(req, res);
 });
-router.post('/model/pipeline-metrics', async (req: Request, res: Response) => {
+router.post("/model/pipeline-metrics", async (req: Request, res: Response) => {
   await storePipelineMetrics(req, res);
 });
+
+
+
 export default router;
