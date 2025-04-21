@@ -13,6 +13,7 @@ interface MsgAreaProps {
   labelClassName?: string;
   height?: string;
   disabled?: boolean;
+  onFocus?: () => void;
 }
 
 const MsgArea: React.FC<MsgAreaProps> = ({
@@ -28,6 +29,7 @@ const MsgArea: React.FC<MsgAreaProps> = ({
   labelClassName = "text-sm font-medium",
   height = "h-40",
   disabled = false,
+  onFocus,
 }) => {
   const isVertical = className.includes("!flex-col");
 
@@ -43,6 +45,7 @@ const MsgArea: React.FC<MsgAreaProps> = ({
             name={name || id}
             value={value}
             onChange={onChange}
+            onFocus={onFocus} 
             placeholder={placeholder}
             required={required}
             disabled={disabled}
@@ -74,6 +77,7 @@ const MsgArea: React.FC<MsgAreaProps> = ({
           name={name || id}
           value={value}
           onChange={onChange}
+          onFocus={onFocus}
           placeholder={placeholder}
           required={required}
           disabled={disabled}

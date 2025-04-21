@@ -13,6 +13,7 @@ import {
 import bcrypt from "bcryptjs";
 import User from "../models/User";
 import { getDashboardStats, getNodeHealth, getRecentActivity, getSystemStatus } from "../controllers/adminController";
+import adminCampaignRoutes from "./adminCampaignRoutes";
 
 const router = express.Router();
 

@@ -13,6 +13,7 @@ interface TextInputProps {
   className?: string;
   labelClassName?: string;
   disabled?: boolean;
+  onFocus?: () => void; // Added onFocus event handler
 }
 
 const TextInput: React.FC<TextInputProps> = ({
@@ -28,6 +29,7 @@ const TextInput: React.FC<TextInputProps> = ({
   className = "",
   labelClassName = "text-sm font-medium",
   disabled = false,
+  onFocus, // Add onFocus to the component props
 }) => {
   // Check if we're using vertical layout
   const isVertical = className.includes("!flex-col");
@@ -46,6 +48,7 @@ const TextInput: React.FC<TextInputProps> = ({
             type={type}
             value={value}
             onChange={onChange}
+            onFocus={onFocus} // Added onFocus event handler
             placeholder={placeholder}
             required={required}
             disabled={disabled}
@@ -76,6 +79,7 @@ const TextInput: React.FC<TextInputProps> = ({
           type={type}
           value={value}
           onChange={onChange}
+          onFocus={onFocus} // Added onFocus event handler
           placeholder={placeholder}
           required={required}
           disabled={disabled}

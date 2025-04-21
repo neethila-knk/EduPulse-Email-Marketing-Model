@@ -532,7 +532,7 @@ const ModelPerformance: React.FC = () => {
                 ? `${pipelineMetrics.processing_time_seconds.toFixed(1)}s`
                 : "N/A"}
             </div>
-            <div className="text-xs text-gray-500 mt-1">Processing Time</div>
+            <div className="text-xs text-gray-500 mt-1">Processing Time (Last Time)</div>
           </div>
         </div>
 
@@ -681,7 +681,7 @@ const ModelPerformance: React.FC = () => {
     <div className="flex h-screen">
       <AdminSidebar onLogout={handleShowLogoutConfirmation} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminNavbar user={adminUser} onLogout={handleShowLogoutConfirmation} />
+        <AdminNavbar user={adminUser} title="Model Performance" onLogout={handleShowLogoutConfirmation} />
         <div className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
         <div className="sticky top-0 z-30">
             <PageHeader

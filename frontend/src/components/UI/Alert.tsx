@@ -26,6 +26,7 @@ interface AlertProps {
   showCancelButton?: boolean; // <-- add this
 }
 
+
 const Alert: React.FC<AlertProps> = ({
   title = "Confirm Action",
   message,

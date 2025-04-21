@@ -70,7 +70,7 @@ const CampaignSchema = new Schema<ICampaign>(
     },
     status: {
         type: String,
-        enum: ["draft", "scheduled", "sending", "sent", "failed", "completed", "cancelled"],
+        enum: ["draft", "scheduled", "sending", "sent", "failed", "completed", "cancelled", "ongoing"],
         default: "draft",
     },
     scheduledFor: {

@@ -29,6 +29,10 @@ import UserManagement from "./pages/admin/UserManagement";
 import AdminManagement from "./pages/admin/AdminManagement";
 import CampaignsList from "./pages/CampaignList";
 import CampaignDetails from "./pages/CampaignAnalytics";
+import EmailExtraction from "./pages/admin/EmailExtraction";
+import NotificationsPage from "./pages/NotificationsPage";
+import AdminCampaignsPage from "./pages/admin/AdminCampaigns";
+import AdminCampaignDetailPage from "./pages/admin/AdminCampaignDetails";
 
 const App = () => {
   return (
@@ -99,6 +103,15 @@ const App = () => {
             }
           />
 
+          <Route
+            path="/allnotifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
 
@@ -119,12 +132,37 @@ const App = () => {
               </AdminProtectedRoute>
             }
           />
+          <Route
+            path="/admin/viewcampaigns"
+            element={
+              <AdminProtectedRoute>
+                <AdminCampaignsPage />
+              </AdminProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/campaigns/:id"
+            element={
+              <AdminProtectedRoute>
+                <AdminCampaignDetailPage />
+              </AdminProtectedRoute>
+            }
+          />
 
           <Route
             path="/admin/managecluster"
             element={
               <AdminProtectedRoute>
                 <ClusterManagement />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/emailextractor"
+            element={
+              <AdminProtectedRoute>
+                <EmailExtraction />
               </AdminProtectedRoute>
             }
           />

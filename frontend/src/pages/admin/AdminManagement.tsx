@@ -252,6 +252,7 @@ const AdminManagement: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminNavbar
           user={currentAdmin}
+          title="Admin Management"
           onLogout={handleShowLogoutConfirmation}
         />
         <div className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 pb-8">

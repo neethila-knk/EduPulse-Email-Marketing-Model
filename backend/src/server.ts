@@ -20,6 +20,11 @@ console.log('Email queue worker initialized');
 import emailSettingsRoutes from './routes/emailSettingsRoutes';
 import notificationRoutes from "./routes/notificationRoutes";
 import searchRoutes from "./routes/searchRoutes";
+import emailExtractionRoutes from "./routes/emailExtractionRoutes";
+import jobUpdateEndpoint from "./routes/jobUpdateEndpoint";
+import { initEmailExtractionCleanup } from "./services/emailExtractionCleanupService";
+import adminCampaignRoutes from "./routes/adminCampaignRoutes";
+
 
 
 dotenv.config();
@@ -95,17 +100,32 @@ app.use("/auth", authRoutes);
 app.use("/api", profileRoutes);
 app.use('/api', clusteringRoutes);
 app.use("/admin", adminAuthRoutes);
+// Register admin campaign routes
+app.use("/admin", adminCampaignRoutes);
+
 app.use('/api/admin', adminAuthRoutes); // User management routes
 app.use("/api/search", searchRoutes);
 app.use("/api/notifications", notificationRoutes);
+
+
 // User clusters routes (these already have authentication middleware applied in the router)
 app.use("/api/user-clusters", userClustersRouter);
 
 // Campaign routes for email sending
 app.use("/api/campaigns", campaignRoutes);
 
-
 app.use('/api/settings', emailSettingsRoutes);
+
+//emailextraction
+// Email extraction routes
+app.use("/api/email-extraction", emailExtractionRoutes);
+
+// Job status update endpoint for FastAPI callbacks
+app.use("/api/email-extraction", jobUpdateEndpoint);
+
+// Initialize the email extraction cleanup service
+initEmailExtractionCleanup();
+
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

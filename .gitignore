@@ -100,7 +100,8 @@ pythonenv*
 
 # Specific data files to ignore
 clustered_emails.csv
-
+email_data.csv
+emails_6804b7374282cffd8ed044e2.csv
 
 # Python distribution / packaging
 .Python

@@ -19,6 +19,7 @@ interface CustomSelectProps {
   label?: string;
   showCount?: boolean;
   disabled?: boolean;
+  onFocus?: () => void; 
 }
 
 const CustomSelect: React.FC<CustomSelectProps> = ({
@@ -30,6 +31,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   length = "full",
   label,
   showCount = true,
+  onFocus, 
  
 }) => {
   const selected = options.find((o) => o.value === value);
@@ -57,6 +59,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       <Listbox value={value} onChange={onChange}>
         <Listbox.Button
           className={`relative cursor-default rounded-md border border-gray-300 bg-white ${sizeClasses} text-left text-gray-700 focus:outline-none focus:ring-0 focus:border-2 focus:border-green-600 w-full`}
+        onFocus={onFocus} 
         >
           <span className="block truncate">
             {selected ? selected.label : placeholder}
