@@ -173,7 +173,7 @@ const UserManagement: React.FC = () => {
     <div className="flex h-screen">
       <AdminSidebar onLogout={handleShowLogoutConfirmation} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminNavbar user={adminUser} onLogout={handleShowLogoutConfirmation} />
+        <AdminNavbar user={adminUser} title="User Management" onLogout={handleShowLogoutConfirmation} />
         <div className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 pb-8">
           <div className="relative">
             <PageHeader

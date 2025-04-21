@@ -11,6 +11,7 @@ interface TextAreaProps {
   className?: string;
   height?: string;
   labelClassName?: string;
+  onFocus?: () => void; // Added onFocus handler
 }
 
 const TextArea: React.FC<TextAreaProps> = ({
@@ -24,6 +25,7 @@ const TextArea: React.FC<TextAreaProps> = ({
   className = "",
   height = "h-40",
   labelClassName = "text-sm font-medium",
+  onFocus, // Added to component props
 }) => {
   return (
     <div className={`flex mb-4 ${className}`}>
@@ -37,6 +39,7 @@ const TextArea: React.FC<TextAreaProps> = ({
           id={id}
           value={value}
           onChange={onChange}
+          onFocus={onFocus} // Added onFocus handler
           placeholder={placeholder}
           required={required}
           className={`w-full px-3 py-2 border ${

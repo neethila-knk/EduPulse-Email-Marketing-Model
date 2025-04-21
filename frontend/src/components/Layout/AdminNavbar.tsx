@@ -48,7 +48,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({
         {/* Right: Welcome + Logout */}
         <div className="w-full md:w-auto flex flex-col md:flex-row items-center gap-2 md:gap-4 sm:flex-row sm:justify-between">
           {/* Row container for small screens */}
-          <div className="w-full flex flex-row justify-between items-center sm:gap-4 pt-1 ">
+          <div className="w-full flex flex-row justify-between items-center sm:gap-4 pt-1">
             {/* Left side: User Info */}
             <div className="flex items-center">
               <div className="bg-green-100 rounded-full p-1 mr-2">
@@ -77,14 +77,14 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({
               </span>
             </div>
 
-            {/* Right side: Logout */}
+            {/* Right side: Logout - Icon only on small screens, Icon + text on larger screens */}
             <button
               onClick={onLogout}
               className="border border-red-600 text-red-600 hover:bg-red-50 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center hover-lift-noShadow whitespace-nowrap flex-shrink-0"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 mr-1 flex-shrink-0"
+                className="h-4 w-4 flex-shrink-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -96,7 +96,7 @@ const AdminNavbar: React.FC<AdminNavbarProps> = ({
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
-              <span className="flex-shrink-0">Logout</span>
+              <span className="flex-shrink-0 ml-1 hidden sm:inline">Logout</span>
             </button>
           </div>
         </div>

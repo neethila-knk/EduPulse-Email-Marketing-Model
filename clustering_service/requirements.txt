@@ -10,3 +10,8 @@ matplotlib
 gower
 httpx
 python-dotenv
+requests
+beautifulsoup4
+python-multipart
+selenium
+webdriver-manager

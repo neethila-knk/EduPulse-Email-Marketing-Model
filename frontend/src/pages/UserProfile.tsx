@@ -12,6 +12,7 @@ import overlayImage from "../assets/elements.svg";
 import { Lock, X } from "lucide-react";
 import Alert from "../components/UI/Alert";
 import DeleteAccountModal from "../components/UI/DeleteAccountModal";
+import ProfileTips from "../components/UI/UserProfileTips";
 
 interface User {
   id: string;
@@ -69,6 +70,8 @@ const UserProfile: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [changePassword, setChangePassword] = useState(false);
+
+  const [activeField, setActiveField] = useState<string>("default");
 
   // Toast state
   const [toast, setToast] = useState<ToastInfo>({
@@ -249,6 +252,10 @@ const UserProfile: React.FC = () => {
     }
   };
 
+  const handleFocus = (fieldName: string) => {
+    setActiveField(fieldName);
+  };
+
   const handleLogout = async () => {
     try {
       await authApi.get("/auth/logout");
@@ -356,6 +363,7 @@ const UserProfile: React.FC = () => {
 
   const handleImageChange = (file: File | null) => {
     setProfileImage(file);
+    handleFocus("profileImage");
 
     // If a new file was selected, create a temporary URL for preview
     if (file) {
@@ -413,11 +421,14 @@ const UserProfile: React.FC = () => {
   const togglePasswordSection = () => {
     setPasswordSectionOpen(!passwordSectionOpen);
     if (!passwordSectionOpen) {
+      setActiveField("default");
       setChangePassword(false);
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setErrors({});
+    } else {
+      setActiveField("security");
     }
   };
 
@@ -498,215 +509,323 @@ const UserProfile: React.FC = () => {
         overlayImage={overlayImage}
       />
 
-      {/* Left-aligned container similar to NewCampaign page */}
-      <div className="container mx-auto px-4 md:px-6 py-10">
-        <form
-          onSubmit={handleSubmit}
-          className="max-w-4xl bg-white rounded-lg shadow-md overflow-hidden"
-        >
-          {/* Profile Image Section */}
-          <div className="bg-gray-300 p-6 flex flex-col items-center justify-center border-b border-gray-200">
-            {imageLoading ? (
-              <div className="mb-4 w-32 h-32 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-              </div>
-            ) : (
-              <ProfileImage
-                initialImage={profileImageUrl}
-                onChange={handleImageChange}
-                onRemove={confirmImageRemove} // Show confirmation dialog
-                className="mb-4"
-                disabled={isSubmitting}
-              />
-            )}
+      {/* Tips for smaller screens - collapsible version */}
+      <div className="container mx-auto px-4 md:px-6 pt-6 lg:hidden">
+        <details className="bg-white border border-gray-200 rounded-lg mb-6">
+          <summary className="px-4 py-3 text-lg font-medium text-green-800 cursor-pointer focus:outline-none">
+            Tips for{" "}
+            {activeField === "default" ? "Profile Management" : activeField}
+          </summary>
+          <div className="px-4 py-3 border-t border-gray-200">
+            <ProfileTips activeField={activeField} />
           </div>
+        </details>
+      </div>
 
-          <div className="p-6">
-            {/* Profile Information Section */}
-            <div className="mb-8">
-              <h2 className="text-lg font-bold text-gray-700 mb-4">
-                Profile Information
-              </h2>
-
-              <TextInput
-                id="username"
-                label="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                error={errors.username}
-                required
-                disabled={isSubmitting}
-              />
-
-              {user && (
-                <TextInput
-                  id="email"
-                  label="Email"
-                  value={user.email}
-                  onChange={() => {}}
-                  disabled={true}
-                />
-              )}
-            </div>
-
-            {/* Display OAuth provider message if applicable */}
-            {user && user.provider !== "local" && (
-              <div className="mb-8 p-4 bg-yellow-50 rounded-md">
-                <p className="text-sm text-yellow-800">
-                  You're signed in with{" "}
-                  {user.provider.charAt(0).toUpperCase() +
-                    user.provider.slice(1)}
-                  . Password management is not available for OAuth accounts.
-                </p>
-              </div>
-            )}
-
-            {/* Password Section - Only show for local accounts */}
-            {user && user.provider === "local" && (
-              <div className="mb-8">
-                <div className="flex items-center mb-4">
-                  <h2 className="text-lg font-bold text-gray-700">Security</h2>
-                  <div className="ml-4">
-                    <button
-                      type="button"
-                      onClick={togglePasswordSection}
-                      className="flex items-center gap-2 text-sm text-dark hover:text-green focus:outline-none rounded-md transition-all hover-lift-noShadow"
-                      disabled={isSubmitting}
-                    >
-                      {passwordSectionOpen ? (
-                        <>
-                          <span>No need to change the password</span>
-                          <X size={18} />
-                        </>
-                      ) : (
-                        <>
-                          <span>Looking to change your password?</span>
-                          <Lock size={18} />
-                        </>
-                      )}
-                    </button>
+      {/* Left-aligned container similar to NewCampaign page */}
+      <div className="container mx-auto px-2 sm:px-4 md:px-6 pt-6 sm:pt-2 md:pt-10 pb-8 sm:pb-8 md:pb-8">
+        <div
+          className="flex flex-col lg:flex-row gap-15
+         max-w-7xl mx-auto"
+        >
+          {/* Form column */}
+          <div className="w-full lg:w-2/3">
+            <form
+              onSubmit={handleSubmit}
+              className="max-w-4xl bg-white rounded-lg shadow-md overflow-hidden"
+            >
+              {/* Profile Image Section */}
+              <div className="bg-gray-300 p-6 flex flex-col items-center justify-center border-b border-gray-200">
+                {imageLoading ? (
+                  <div className="mb-4 w-32 h-32 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                   </div>
+                ) : (
+                  <ProfileImage
+                    initialImage={profileImageUrl}
+                    onChange={handleImageChange}
+                    onRemove={confirmImageRemove} // Show confirmation dialog
+                    className="mb-4"
+                    disabled={isSubmitting}
+                  />
+                )}
+              </div>
+
+              <div className="p-6">
+                {/* Profile Information Section */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-bold text-gray-700 mb-4">
+                    Profile Information
+                  </h2>
+
+                  <TextInput
+                    id="username"
+                    label="Username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    error={errors.username}
+                    required
+                    disabled={isSubmitting}
+                    onFocus={() => handleFocus("username")} // Add this line
+                  />
+
+                  {user && (
+                    <TextInput
+                      id="email"
+                      label="Email"
+                      value={user.email}
+                      onChange={() => {}}
+                      disabled={true}
+                    />
+                  )}
                 </div>
 
-                {/* Password Section with Animation */}
-                <div
-                  className="overflow-hidden transition-all duration-300 ease-in-out"
-                  style={{ maxHeight: passwordSectionOpen ? "500px" : "0" }}
-                >
-                  <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4">
-                    <div className="mb-4">
-                      <div className="flex items-center mb-4">
-                        <input
-                          id="changePassword"
-                          type="checkbox"
-                          checked={changePassword}
-                          onChange={() => setChangePassword(!changePassword)}
-                          className="h-4 w-4 green focus:ring-green border-gray-300 rounded"
+                {/* Display OAuth provider message if applicable */}
+                {user && user.provider !== "local" && (
+                  <div className="mb-8 p-4 bg-yellow-50 rounded-md">
+                    <p className="text-sm text-yellow-800">
+                      You're signed in with{" "}
+                      {user.provider.charAt(0).toUpperCase() +
+                        user.provider.slice(1)}
+                      . Password management is not available for OAuth accounts.
+                    </p>
+                  </div>
+                )}
+
+                {/* Password Section - Only show for local accounts */}
+                {user && user.provider === "local" && (
+                  <div className="mb-8">
+                    <div className="flex items-center mb-4">
+                      <h2 className="text-lg font-bold text-gray-700">
+                        Security
+                      </h2>
+                      <div className="ml-4">
+                        <button
+                          type="button"
+                          onClick={togglePasswordSection}
+                          className="flex items-center gap-2 text-sm text-dark hover:text-green focus:outline-none rounded-md transition-all hover-lift-noShadow"
                           disabled={isSubmitting}
-                        />
-                        <label
-                          htmlFor="changePassword"
-                          className="ml-2 block text-sm text-gray-700"
                         >
-                          I want to change my password
-                        </label>
+                          {passwordSectionOpen ? (
+                            <>
+                              <span>No need to change the password</span>
+                              <X size={18} />
+                            </>
+                          ) : (
+                            <>
+                              <span>Looking to change your password?</span>
+                              <Lock size={18} />
+                            </>
+                          )}
+                        </button>
                       </div>
+                    </div>
 
-                      {/* Password Fields with Animation */}
-                      <div
-                        className="space-y-4 overflow-hidden transition-all duration-300 ease-in-out"
-                        style={{ maxHeight: changePassword ? "500px" : "0" }}
-                      >
-                        <PasswordInput
-                          id="currentPassword"
-                          label="Current Password"
-                          value={currentPassword}
-                          onChange={(e) => setCurrentPassword(e.target.value)}
-                          placeholder="Enter your current password"
-                          error={errors.currentPassword}
-                          required={changePassword}
-                          disabled={isSubmitting}
-                        />
+                    {/* Password Section with Animation */}
+                    <div
+                      className="overflow-hidden transition-all duration-300 ease-in-out"
+                      style={{ maxHeight: passwordSectionOpen ? "500px" : "0" }}
+                    >
+                      <div className="bg-gray-50 p-4 rounded-md border border-gray-200 mb-4">
+                        <div className="mb-4">
+                          <div className="flex items-center mb-4">
+                            <input
+                              id="changePassword"
+                              type="checkbox"
+                              checked={changePassword}
+                              onChange={() =>
+                                setChangePassword(!changePassword)
+                              }
+                              className="h-4 w-4 green focus:ring-green border-gray-300 rounded"
+                              disabled={isSubmitting}
+                            />
+                            <label
+                              htmlFor="changePassword"
+                              className="ml-2 block text-sm text-gray-700"
+                            >
+                              I want to change my password
+                            </label>
+                          </div>
 
-                        <PasswordInput
-                          id="newPassword"
-                          label="New Password"
-                          value={newPassword}
-                          onChange={(e) => setNewPassword(e.target.value)}
-                          placeholder="Enter new password"
-                          error={errors.newPassword}
-                          required={changePassword}
-                          disabled={isSubmitting}
-                        />
+                          {/* Password Fields with Animation */}
+                          <div
+                            className="space-y-4 overflow-hidden transition-all duration-300 ease-in-out"
+                            style={{
+                              maxHeight: changePassword ? "500px" : "0",
+                            }}
+                          >
+                            <PasswordInput
+                              id="currentPassword"
+                              label="Current Password"
+                              value={currentPassword}
+                              onChange={(e) =>
+                                setCurrentPassword(e.target.value)
+                              }
+                              placeholder="Enter your current password"
+                              error={errors.currentPassword}
+                              required={changePassword}
+                              disabled={isSubmitting}
+                              onFocus={() => handleFocus("currentPassword")} // Add this line
+                            />
 
-                        <PasswordInput
-                          id="confirmPassword"
-                          label="Confirm Password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
-                          placeholder="Confirm new password"
-                          error={errors.confirmPassword}
-                          required={changePassword}
-                          disabled={isSubmitting}
-                        />
+                            <PasswordInput
+                              id="newPassword"
+                              label="New Password"
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Enter new password"
+                              error={errors.newPassword}
+                              required={changePassword}
+                              disabled={isSubmitting}
+                            />
+
+                            <PasswordInput
+                              id="confirmPassword"
+                              label="Confirm Password"
+                              value={confirmPassword}
+                              onChange={(e) =>
+                                setConfirmPassword(e.target.value)
+                              }
+                              placeholder="Confirm new password"
+                              error={errors.confirmPassword}
+                              required={changePassword}
+                              disabled={isSubmitting}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
+                )}
+                {/* Delete Account Section */}
+                <div className="container mx-auto px-4 pb-6 md:px-6">
+                  <div
+                    className="bg-white rounded-lg shadow-md p-6 mt-8 border border-red-200"
+                    onMouseEnter={() => handleFocus("deleteAccount")}
+                  >
+                    <h2 className="text-lg font-bold text-red-700 mb-4">
+                      Delete Account
+                    </h2>
+                    <p className="mb-4 text-sm text-gray-600">
+                      Warning: This action is irreversible. Your account and all
+                      associated data will be permanently deleted.
+                    </p>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setShowDeleteAccountModal(true)}
+                      disabled={isDeletingAccount}
+                    >
+                      {isDeletingAccount ? "Deleting..." : "Delete Account"}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Delete Account Confirmation Modal */}
+                {showDeleteAccountModal && user && (
+                  <DeleteAccountModal
+                    provider={user.provider}
+                    isDeleting={isDeletingAccount}
+                    onConfirm={handleAccountDeletion}
+                    onCancel={() => setShowDeleteAccountModal(false)}
+                  />
+                )}
+                {/* Action Buttons - Right aligned */}
+                <div className="flex justify-end pt-4 border-t border-gray-200">
+                  <Button
+                    variant="outline"
+                    className="mr-3"
+                    onClick={handleCancel}
+                    type="button"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="px-6"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Saving..." : "Save Changes"}
+                  </Button>
                 </div>
               </div>
-            )}
-            {/* Delete Account Section */}
-            <div className="container mx-auto px-4 pb-6 md:px-6">
-              <div className="bg-white rounded-lg shadow-md p-6 mt-8 border border-red-200">
-                <h2 className="text-lg font-bold text-red-700 mb-4">
-                  Delete Account
-                </h2>
-                <p className="mb-4 text-sm text-gray-600">
-                  Warning: This action is irreversible. Your account and all
-                  associated data will be permanently deleted.
-                </p>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  onClick={() => setShowDeleteAccountModal(true)}
-                  disabled={isDeletingAccount}
-                >
-                  {isDeletingAccount ? "Deleting..." : "Delete Account"}
-                </Button>
+            </form>
+          </div>
+          {/* Tips column - Desktop version (hidden on mobile) */}
+          <div className="hidden lg:block lg:w-1/3 mt-10">
+            <div className="sticky top-6">
+              <ProfileTips activeField={activeField} />
+
+              {/* Profile Checklist */}
+              <div className="bg-green-50 p-4 rounded-lg border border-green-100 mt-6">
+                <h3 className="text-lg font-medium text-green-800 mb-3">
+                  Profile Checklist
+                </h3>
+                <ul className="space-y-2">
+                  <li className="flex items-start">
+                    <span
+                      className={`mr-2 ${
+                        username ? "text-green-500" : "text-gray-300"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span className="text-sm text-gray-700">Username set</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span
+                      className={`mr-2 ${
+                        profileImageUrl ? "text-green-500" : "text-gray-300"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span className="text-sm text-gray-700">
+                      Profile image uploaded
+                    </span>
+                  </li>
+                  {user && user.provider === "local" && (
+                    <li className="flex items-start">
+                      <span
+                        className={`mr-2 ${
+                          passwordSectionOpen && changePassword
+                            ? "text-yellow-500"
+                            : "text-gray-300"
+                        }`}
+                      >
+                        {passwordSectionOpen && changePassword ? "!" : "✓"}
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        Password security check
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+
+              {/* Account Security */}
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-6">
+                <h3 className="text-lg font-medium text-gray-700 mb-3">
+                  Account Security
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-600">Account type:</span>
+                    <span className="text-sm font-medium capitalize">
+                      {user?.provider || "Local"}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-gray-600">Last updated:</span>
+                    <span className="text-sm font-medium">Today</span>
+                  </div>
+                </div>
               </div>
             </div>
-
-            {/* Delete Account Confirmation Modal */}
-            {showDeleteAccountModal && user && (
-              <DeleteAccountModal
-                provider={user.provider}
-                isDeleting={isDeletingAccount}
-                onConfirm={handleAccountDeletion}
-                onCancel={() => setShowDeleteAccountModal(false)}
-              />
-            )}
-            {/* Action Buttons - Right aligned */}
-            <div className="flex justify-end pt-4 border-t border-gray-200">
-              <Button
-                variant="outline"
-                className="mr-3"
-                onClick={handleCancel}
-                type="button"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                variant="primary"
-                className="px-6"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
           </div>
-        </form>
+        </div>
       </div>
     </Layout>
   );

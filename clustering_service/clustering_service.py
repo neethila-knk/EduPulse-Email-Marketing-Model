@@ -15,6 +15,8 @@ import asyncio
 import time
 from typing import Dict, Any, List, Optional, Union
 
+import email_scraper_route
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -489,6 +491,8 @@ async def store_pipeline_metrics(metrics: PipelineMetrics):
         logger.error(f"Error storing pipeline metrics: {str(e)}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Error storing pipeline metrics: {str(e)}")
+    
+app.include_router(email_scraper_route.router, prefix="/api/email-extraction")
 
 @app.get("/health")
 async def health_check():
