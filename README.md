@@ -1,4 +1,4 @@
-# EduPulse 📧 
+# EduPulse
 
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
 
@@ -6,7 +6,7 @@
 
 EduPulse is a web-based platform that revolutionizes email marketing for the Sri Lankan education sector by implementing machine learning-driven audience segmentation. Unlike traditional bulk email solutions that focus primarily on send-time optimization, EduPulse uses advanced clustering techniques to target the most relevant audience, resulting in higher engagement metrics and improved campaign performance.
 
-![EduPulse Project Summary]([https://i.ibb.co/VWCyZCSF/Edupulse-Poster.png])
+![EduPulse Project Summary](https://i.ibb.co/VWCyZCSF/Edupulse-Poster.png)
 
 ## 🚀 Key Features
 
@@ -161,5 +161,6 @@ The system has undergone rigorous testing, including:
 
 ## 👨‍💻 Contributors
 
-- Kumarage Kumararatne - Full-Stack Developer (owner)
+- Kumarage Kumararatne - Full-Stack Developer (Owner)
 
+--Developed as part of BSc (Hons) Software Engineering at Plymouth University, UK.
