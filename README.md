@@ -6,7 +6,7 @@
 
 EduPulse is a web-based platform that revolutionizes email marketing for the Sri Lankan education sector by implementing machine learning-driven audience segmentation. Unlike traditional bulk email solutions that focus primarily on send-time optimization, EduPulse uses advanced clustering techniques to target the most relevant audience, resulting in higher engagement metrics and improved campaign performance.
 
-![EduPulse Dashboard]([https://ibb.co/7Jpc5pW3])
+![EduPulse Project Summary]([https://i.ibb.co/VWCyZCSF/Edupulse-Poster.png])
 
 ## 🚀 Key Features
 
