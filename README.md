@@ -1,5 +1,6 @@
 # EduPulse
 
+![License](https://img.shields.io/badge/license-MIT-blue)
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
 
 ## Machine Learning-Driven Targeted Email Marketing Model for the Sri Lankan Education Sector
@@ -163,4 +164,10 @@ The system has undergone rigorous testing, including:
 
 - Kumarage Kumararatne - Full-Stack Developer (Owner)
 
---Developed as part of BSc (Hons) Software Engineering at Plymouth University, UK.
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+*Developed as part of BSc (Hons) Software Engineering at Plymouth University, UK.*
