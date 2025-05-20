@@ -15,3 +15,4 @@ beautifulsoup4
 python-multipart
 selenium
 webdriver-manager
+pytest
