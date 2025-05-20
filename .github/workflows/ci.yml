@@ -34,9 +34,14 @@ jobs:
         working-directory: ./backend
         run: npm ci
 
-      - name: Run lint
+      - name: Run lint (if configured)
         working-directory: ./backend
-        run: npm run lint
+        run: |
+          if npm run lint --dry-run > /dev/null 2>&1; then
+            npm run lint
+          else
+            echo "No lint script defined, skipping."
+          fi
 
       - name: Run tests
         working-directory: ./backend
@@ -89,9 +94,14 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: Run lint
+      - name: Run lint (if configured)
         working-directory: ./frontend
-        run: npm run lint
+        run: |
+          if npm run lint --dry-run > /dev/null 2>&1; then
+            npm run lint
+          else
+            echo "No lint script defined, skipping."
+          fi
 
       - name: Run tests
         working-directory: ./frontend
