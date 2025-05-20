@@ -1,8 +1,15 @@
 import { Strategy as LocalStrategy } from 'passport-local';
 const mockingoose = require('mockingoose');
-
-import bcrypt from 'bcryptjs';
 import Admin from '../models/Admin';
+
+// Mock bcryptjs completely
+jest.mock('bcryptjs', () => ({
+  hash: jest.fn().mockResolvedValue('hashedpassword'),
+  compare: jest.fn().mockImplementation((plainText, _hashed) => {
+    // Mock comparison - return true only for known test password
+    return Promise.resolve(plainText === 'test123');
+  })
+}));
 
 // Helper to wrap LocalStrategy authenticate for testing
 const runLocalStrategy = (
@@ -11,7 +18,7 @@ const runLocalStrategy = (
   password: string
 ): Promise<any> => {
   return new Promise((resolve) => {
-    // @ts-ignore: internal test structure, not an actual HTTP request
+    // @ts-ignore: internal test structure
     strategy.success = (user: any) => resolve({ user });
     // @ts-ignore
     strategy.fail = (_info: any) => resolve({ user: null, info: _info });
@@ -23,23 +30,20 @@ const runLocalStrategy = (
 };
 
 describe('Passport Local Strategy - Admin', () => {
-  const mockPassword = 'test123';
-  let mockHashedPassword: string;
+  const mockAdmin = {
+    _id: '661d2154f7269a6caa1a7f01',
+    email: 'admin@example.com',
+    password: 'hashedpassword', // This matches our mock
+    isActive: true,
+  };
 
-  beforeAll(async () => {
-    mockHashedPassword = await bcrypt.hash(mockPassword, 10);
+  beforeEach(() => {
+    // Reset all mocks before each test
+    jest.clearAllMocks();
   });
 
   it('authenticates a valid admin', async () => {
-    mockingoose(Admin).toReturn(
-      {
-        _id: '661d2154f7269a6caa1a7f01',
-        email: 'admin@example.com',
-        password: mockHashedPassword,
-        isActive: true,
-      },
-      'findOne'
-    );
+    mockingoose(Admin).toReturn(mockAdmin, 'findOne');
 
     const strategy = new LocalStrategy(
       { usernameField: 'email' },
@@ -54,7 +58,7 @@ describe('Passport Local Strategy - Admin', () => {
             });
           }
 
-          const isMatch = await bcrypt.compare(password, admin.password);
+          const isMatch = await require('bcryptjs').compare(password, admin.password);
           if (!isMatch)
             return done(null, false, { message: 'Incorrect password' });
 
@@ -62,7 +66,6 @@ describe('Passport Local Strategy - Admin', () => {
             ...admin.toObject(),
             _id: admin._id.toString(),
           });
-          
         } catch (error) {
           return done(error);
         }
@@ -72,25 +75,18 @@ describe('Passport Local Strategy - Admin', () => {
     const { user, info, error } = await runLocalStrategy(
       strategy,
       'admin@example.com',
-      mockPassword
+      'test123' // This matches our mock comparison
     );
 
     expect(error).toBeUndefined();
     expect(user).toBeTruthy();
     expect(user.email).toBe('admin@example.com');
     expect(info).toBeUndefined();
+    expect(require('bcryptjs').compare).toHaveBeenCalledWith('test123', 'hashedpassword');
   });
 
   it('fails on wrong password', async () => {
-    mockingoose(Admin).toReturn(
-      {
-        _id: '661d2154f7269a6caa1a7f01',
-        email: 'admin@example.com',
-        password: mockHashedPassword,
-        isActive: true,
-      },
-      'findOne'
-    );
+    mockingoose(Admin).toReturn(mockAdmin, 'findOne');
 
     const strategy = new LocalStrategy(
       { usernameField: 'email' },
@@ -99,7 +95,7 @@ describe('Passport Local Strategy - Admin', () => {
           const admin = await Admin.findOne({ email });
           if (!admin) return done(null, false, { message: 'Invalid email' });
 
-          const isMatch = await bcrypt.compare(password, admin.password);
+          const isMatch = await require('bcryptjs').compare(password, admin.password);
           if (!isMatch)
             return done(null, false, { message: 'Incorrect password' });
 
@@ -116,21 +112,17 @@ describe('Passport Local Strategy - Admin', () => {
     const { user, info } = await runLocalStrategy(
       strategy,
       'admin@example.com',
-      'wrongpass'
+      'wrongpass' // This won't match our mock comparison
     );
 
     expect(user).toBeNull();
     expect(info?.message).toBe('Incorrect password');
+    expect(require('bcryptjs').compare).toHaveBeenCalledWith('wrongpass', 'hashedpassword');
   });
 
   it('fails if admin is inactive', async () => {
     mockingoose(Admin).toReturn(
-      {
-        _id: '661d2154f7269a6caa1a7f01',
-        email: 'admin@example.com',
-        password: mockHashedPassword,
-        isActive: false,
-      },
+      { ...mockAdmin, isActive: false },
       'findOne'
     );
 
@@ -147,7 +139,7 @@ describe('Passport Local Strategy - Admin', () => {
             });
           }
 
-          const isMatch = await bcrypt.compare(password, admin.password);
+          const isMatch = await require('bcryptjs').compare(password, admin.password);
           if (!isMatch)
             return done(null, false, { message: 'Incorrect password' });
 
@@ -164,10 +156,12 @@ describe('Passport Local Strategy - Admin', () => {
     const { user, info } = await runLocalStrategy(
       strategy,
       'admin@example.com',
-      mockPassword
+      'test123'
     );
 
     expect(user).toBeNull();
     expect(info?.message).toMatch(/deactivated/i);
+    // Verify compare wasn't called since we failed on isActive first
+    expect(require('bcryptjs').compare).not.toHaveBeenCalled();
   });
 });
