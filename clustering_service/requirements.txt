@@ -15,3 +15,7 @@ beautifulsoup4
 python-multipart
 selenium
 webdriver-manager
+pytest
+asgi_lifespan
+pytest-asyncio
+
