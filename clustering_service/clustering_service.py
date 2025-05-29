@@ -128,7 +128,7 @@ def generate_cluster_analysis_from_records(records):
         unique_clusters = set(valid_cluster_names)
         logger.info(f"Found {len(unique_clusters)} unique cluster names")
         
-        # If we don't have any clusters but have records, something is wrong
+       
         if len(unique_clusters) == 0 and len(records) > 0:
             logger.warning("No clusters found but have records - generating from domain/keyword combinations")
             # Create clusters based on domain and keyword combinations
@@ -271,7 +271,7 @@ async def store_metrics_after_clustering(result_data):
                 logger.error(f"Failed to store metrics: {response.text}")
                 return False
 
-            logger.info("✅ Successfully stored pipeline metrics")
+            logger.info("Successfully stored pipeline metrics")
             return True
 
     except Exception as e:

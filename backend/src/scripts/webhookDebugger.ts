@@ -1,6 +1,3 @@
-// src/scripts/finalWebhookTest.ts
-// Run with: npx ts-node src/scripts/finalWebhookTest.ts 67ff42f8149ac2a9f954cb67
-
 import axios from 'axios';
 import { MongoClient, ObjectId } from 'mongodb';
 import dotenv from 'dotenv';
@@ -103,9 +100,9 @@ async function testWebhook(): Promise<void> {
     console.log(`Metric changes: Opens +${openDiff}, Clicks +${clickDiff}`);
     
     if (openDiff === 1 && clickDiff === 1) {
-      console.log('✅ SUCCESS: Webhook is working correctly! Metrics were updated.');
+      console.log('SUCCESS: Webhook is working correctly! Metrics were updated.');
     } else {
-      console.log('❌ FAILURE: Metrics were not updated as expected.');
+      console.log('FAILURE: Metrics were not updated as expected.');
       console.log('Check your webhook processing and database update logic.');
     }
   } catch (error) {

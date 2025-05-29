@@ -1,11 +1,8 @@
-// src/services/notificationService.ts
 import mongoose from 'mongoose';
 import Notification from '../models/Notification';
 import Campaign from '../models/Campaign';
 
-/**
- * Service for creating system notifications
- */
+
 export const createSystemNotification = async (
   userId: mongoose.Types.ObjectId,
   title: string,
@@ -31,9 +28,7 @@ export const createSystemNotification = async (
   }
 };
 
-/**
- * Create campaign-related notifications
- */
+
 export const createCampaignNotification = async (
   userId: mongoose.Types.ObjectId,
   campaignId: mongoose.Types.ObjectId,
@@ -41,7 +36,7 @@ export const createCampaignNotification = async (
   emailsSent?: number
 ) => {
   try {
-    // Get campaign details
+    
     const campaign = await Campaign.findById(campaignId);
     if (!campaign) {
       throw new Error('Campaign not found');
@@ -50,7 +45,7 @@ export const createCampaignNotification = async (
     let title = '';
     let message = '';
     
-    // Generate notification content based on status
+    
     switch (status) {
       case 'completed':
         title = 'Campaign Completed';
@@ -73,7 +68,7 @@ export const createCampaignNotification = async (
         message = `Your campaign "${campaign.campaignName}" status has been updated to ${status}.`;
     }
     
-    // Create the notification
+
     const notification = new Notification({
       userId,
       title,
@@ -92,9 +87,7 @@ export const createCampaignNotification = async (
   }
 };
 
-/**
- * Send alert notification to user
- */
+
 export const createAlertNotification = async (
   userId: mongoose.Types.ObjectId,
   title: string,
@@ -120,10 +113,7 @@ export const createAlertNotification = async (
   }
 };
 
-/**
- * Clean up old notifications
- * This could be run as a scheduled task
- */
+
 export const cleanupOldNotifications = async (daysToKeep = 30) => {
   try {
     const cutoffDate = new Date();
@@ -141,9 +131,7 @@ export const cleanupOldNotifications = async (daysToKeep = 30) => {
   }
 };
 
-/**
- * Use this in the campaign controller to generate notifications when campaigns change status
- */
+
 export const handleCampaignStatusChange = async (
   campaign: any,
   oldStatus: string,

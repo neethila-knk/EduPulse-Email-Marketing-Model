@@ -3,7 +3,7 @@ import passport from "passport";
 import { verifyAdminAccessToken } from "../utils/adminJwtUtils";
 import Admin from "../models/Admin";
 
-// Admin JWT authentication middleware
+
 export const authenticateAdminJWT = async (
   req: Request,
   res: Response,
@@ -29,7 +29,7 @@ export const authenticateAdminJWT = async (
   }
 
   try {
-    // Verify the admin exists in the database
+ 
     const admin = await Admin.findById(payload.id);
     if (!admin) {
       res.status(401).json({
@@ -38,7 +38,7 @@ export const authenticateAdminJWT = async (
       return;
     }
 
-    // Check if admin is active
+    
     if (admin.isActive === false) {
       res.status(403).json({
         message:
@@ -48,7 +48,7 @@ export const authenticateAdminJWT = async (
       return;
     }
 
-    // Use type assertion to explicitly declare type
+
     (req as any).user = admin;
     next();
   } catch (error) {
@@ -104,7 +104,7 @@ export const authenticateAdminLocal = (
         return;
       }
 
-      // Double-check admin is active (belt and suspenders approach)
+      
       if (admin.isActive === false) {
         res.status(403).json({
           message:
@@ -115,14 +115,13 @@ export const authenticateAdminLocal = (
         return;
       }
 
-      // Use type assertion
       (req as any).user = admin;
       next();
     }
   )(req, res, next);
 };
 
-// Middleware to check for super_admin role
+
 export const isSuperAdmin: RequestHandler = async (req, res, next) => {
   try {
     const admin = req.user as any;

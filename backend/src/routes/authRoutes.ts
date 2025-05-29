@@ -35,9 +35,9 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       // Check if the existing user is from an OAuth provider
-      if (existingUser.provider !== 'local') {
-        res.status(400).json({ 
-          message: `This email is already registered with ${existingUser.provider}. Please sign in with ${existingUser.provider} instead.` 
+      if (existingUser.provider !== "local") {
+        res.status(400).json({
+          message: `This email is already registered with ${existingUser.provider}. Please sign in with ${existingUser.provider} instead.`,
         });
       } else {
         // Generic message for security (don't reveal if local account exists)
@@ -87,147 +87,159 @@ router.post("/register", async (req: Request, res: Response): Promise<void> => {
 
 // Login route
 
-router.post("/login", async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    // Validate inputs
-    const { email, password } = req.body;
+router.post(
+  "/login",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // Validate inputs
+      const { email, password } = req.body;
 
-    if (!email || !password) {
-      res.status(400).json({
-        message: "Email and password are required",
-        errors: {
-          email: !email ? "Email is required" : undefined,
-          password: !password ? "Password is required" : undefined,
-        },
-      });
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      res.status(400).json({
-        message: "Invalid email format",
-        errors: {
-          email: "Please enter a valid email address",
-        },
-      });
-      return;
-    }
-
-    // Find user by email first to check if account is active
-    const user = await User.findOne({ email });
-    
-    if (user && user.isActive === false) {
-      res.status(403).json({
-        message: "Your account has been deactivated. Please contact support for assistance.",
-        error: "ACCOUNT_DEACTIVATED",
-        errors: {
-          auth: "Account deactivated"
-        }
-      });
-      return;
-    }
-
-    passport.authenticate("local", async (err: any, user: any, info: any) => {
-      if (err) {
-        console.error("Authentication error:", err);
-        res.status(500).json({ message: "Authentication error occurred" });
-        return;
-      }
-
-      if (!user) {
-        // Enhanced error message handling
-        let errorMessage = "Invalid credentials";
-        let errorField = "email"; // Default error field
-
-        if (info) {
-          if (info.message.includes("not found")) {
-            errorMessage = "No account found with this email address";
-          } else if (info.message.includes("password")) {
-            errorMessage = "Incorrect password";
-            errorField = "password";
-          } else if (info.message.includes("blocked") || info.message.includes("locked")) {
-            errorMessage =
-              "Account is locked. Please reset your password or contact support.";
-          }
-        }
-
-        res.status(401).json({
-          message: errorMessage,
+      if (!email || !password) {
+        res.status(400).json({
+          message: "Email and password are required",
           errors: {
-            [errorField]: errorMessage,
+            email: !email ? "Email is required" : undefined,
+            password: !password ? "Password is required" : undefined,
           },
         });
         return;
       }
 
-      // Generate JWT tokens
-      const tokens = generateTokens(user);
-
-      try {
-        // Store refresh token in database and record login time
-        await User.findByIdAndUpdate(user._id, {
-          refreshToken: tokens.refreshToken,
-          lastLogin: new Date(),
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        res.status(400).json({
+          message: "Invalid email format",
+          errors: {
+            email: "Please enter a valid email address",
+          },
         });
-
-        res.status(200).json({
-          message: "Login successful",
-          ...tokens,
-        });
-      } catch (err) {
-        console.error("Token save error:", err);
-        res.status(500).json({ message: "Error saving authentication token" });
+        return;
       }
-    })(req, res, next);
-  } catch (error) {
-    console.error("Unexpected error during login:", error);
-    res.status(500).json({ message: "Internal server error" });
+
+      // Find user by email first to check if account is active
+      const user = await User.findOne({ email });
+
+      if (user && user.isActive === false) {
+        res.status(403).json({
+          message:
+            "Your account has been deactivated. Please contact support for assistance.",
+          error: "ACCOUNT_DEACTIVATED",
+          errors: {
+            auth: "Account deactivated",
+          },
+        });
+        return;
+      }
+
+      passport.authenticate("local", async (err: any, user: any, info: any) => {
+        if (err) {
+          console.error("Authentication error:", err);
+          res.status(500).json({ message: "Authentication error occurred" });
+          return;
+        }
+
+        if (!user) {
+          // Enhanced error message handling
+          let errorMessage = "Invalid credentials";
+          let errorField = "email"; // Default error field
+
+          if (info) {
+            if (info.message.includes("not found")) {
+              errorMessage = "No account found with this email address";
+            } else if (info.message.includes("password")) {
+              errorMessage = "Incorrect password";
+              errorField = "password";
+            } else if (
+              info.message.includes("blocked") ||
+              info.message.includes("locked")
+            ) {
+              errorMessage =
+                "Account is locked. Please reset your password or contact support.";
+            }
+          }
+
+          res.status(401).json({
+            message: errorMessage,
+            errors: {
+              [errorField]: errorMessage,
+            },
+          });
+          return;
+        }
+
+        // Generate JWT tokens
+        const tokens = generateTokens(user);
+
+        try {
+          // Store refresh token in database and record login time
+          await User.findByIdAndUpdate(user._id, {
+            refreshToken: tokens.refreshToken,
+            lastLogin: new Date(),
+          });
+
+          res.status(200).json({
+            message: "Login successful",
+            ...tokens,
+          });
+        } catch (err) {
+          console.error("Token save error:", err);
+          res
+            .status(500)
+            .json({ message: "Error saving authentication token" });
+        }
+      })(req, res, next);
+    } catch (error) {
+      console.error("Unexpected error during login:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
   }
-});
+);
 
 // Logout route
 router.get(
   "/logout",
   authenticateJWT,
-  async (req: Request, res: Response, next: NextFunction) : Promise<void> => {
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       if (req.user) {
         const userId = req.user?._id;
 
-const user = await User.findById(userId); // ✅ Returns full UserDocument
+        const user = await User.findById(userId); // ✅ Returns full UserDocument
 
-if (!user) {
-  res.status(404).json({ message: "User not found" });
-  return;
-}
+        if (!user) {
+          res.status(404).json({ message: "User not found" });
+          return;
+        }
 
-// Now `user` is correctly typed as UserDocument
-await user.save();
-
+        // Now `user` is correctly typed as UserDocument
+        await user.save();
 
         // Revoke Google OAuth token if present
-        if (user.provider === 'google' && user.googleTokens?.accessToken) {
+        if (user.provider === "google" && user.googleTokens?.accessToken) {
           try {
             // Attempt to revoke the Google token
-            await axios.post(`https://oauth2.googleapis.com/revoke?token=${user.googleTokens.accessToken}`, {}, {
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
+            await axios.post(
+              `https://oauth2.googleapis.com/revoke?token=${user.googleTokens.accessToken}`,
+              {},
+              {
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                },
               }
-            });
-            console.log('Google token revoked successfully');
+            );
+            console.log("Google token revoked successfully");
           } catch (error) {
-            console.error('Error revoking Google token:', error);
+            console.error("Error revoking Google token:", error);
             // Continue with logout even if token revocation fails
           }
         }
 
         // Clear tokens in the database
-        await User.findByIdAndUpdate(user._id, { 
+        await User.findByIdAndUpdate(user._id, {
           refreshToken: null,
-          'googleTokens.accessToken': null,
-          'googleTokens.refreshToken': null
+          "googleTokens.accessToken": null,
+          "googleTokens.refreshToken": null,
         });
       }
 
@@ -236,12 +248,14 @@ await user.save();
         req.session.destroy((err) => {
           if (err) {
             console.error("Session destruction error:", err);
-            return res.status(500).json({ message: "Error during logout", error: err });
+            return res
+              .status(500)
+              .json({ message: "Error during logout", error: err });
           }
-          
+
           // Clear all cookies
-          res.clearCookie('connect.sid');
-          
+          res.clearCookie("connect.sid");
+
           return res.json({ message: "Logged out successfully" });
         });
       } else {
@@ -254,7 +268,6 @@ await user.save();
     }
   }
 );
-
 
 // Refresh token route
 router.post(
@@ -518,7 +531,6 @@ router.post(
     </html>
     `;
 
-      // Plain text alternative for email clients that don't support HTML
       const textEmail = `
 Account Security: Password Reset for Your ${appName} Account
 
@@ -600,90 +612,97 @@ router.post(
 );
 
 // Google OAuth Routes
-router.get(
-  "/google",
-  (req, res, next) => {
-    // Clear any existing Google session cookies if possible
-    try {
-      res.clearCookie('G_AUTHUSER_H');
-      res.clearCookie('G_ENABLED_IDPS');
-    } catch (e) {
-      console.log('Note: Could not clear Google cookies');
-    }
-    
-    // This is where we pass the prompt and accessType parameters
-    passport.authenticate("google", {
-      scope: ["profile", "email"],
-      // These are passed as authentication options, not in the strategy constructor
-      prompt: "select_account",
-      accessType: "offline"
-    })(req, res, next);
+router.get("/google", (req, res, next) => {
+  try {
+    res.clearCookie("G_AUTHUSER_H");
+    res.clearCookie("G_ENABLED_IDPS");
+  } catch (e) {
+    console.log("Note: Could not clear Google cookies");
   }
-);
 
-// Google OAuth callback route
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+
+    prompt: "select_account",
+    accessType: "offline",
+  })(req, res, next);
+});
+
 router.get(
   "/google/callback",
   (req: Request, res: Response, next: NextFunction) => {
-    passport.authenticate("google", {
-      session: false,
-      failureRedirect: `${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=oauth_failed`,
-    }, (err, user, info) => {
-      // Handle authentication errors
-      if (err) {
-        console.error("OAuth error:", err);
-        
-        // Redirect to frontend with specific error message
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-        
-        // Check for account deactivation error first
-        if (err.message === "ACCOUNT_DEACTIVATED") {
-          return res.redirect(`${frontendUrl}/login?error=account_deactivated`);
-        }
-        
-        // Check for other specific error messages
-        if (err.message && err.message.includes("already registered")) {
-          // Encode the error message to include in the URL
-          const encodedMessage = encodeURIComponent(err.message);
-          return res.redirect(`${frontendUrl}/login?error=email_exists&message=${encodedMessage}`);
-        }
-        
-        // Generic OAuth failure
-        return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
-      }
-      
-      if (!user) {
-        return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=no_user`);
-      }
-      
-      // Check if user account is active as an additional safeguard
-      if (user.isActive === false) {
-        return res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=account_deactivated`);
-      }
-      
-      // Proceed with successful authentication
-      // Generate JWT tokens for OAuth user
-      const tokens = generateTokens(user);
+    passport.authenticate(
+      "google",
+      {
+        session: false,
+        failureRedirect: `${
+          process.env.FRONTEND_URL || "http://localhost:5173"
+        }/login?error=oauth_failed`,
+      },
+      (err, user, info) => {
+        if (err) {
+          console.error("OAuth error:", err);
 
-      // Store refresh token
-      User.findByIdAndUpdate(user._id, {
-        refreshToken: tokens.refreshToken,
-        lastLogin: new Date(),
-      })
-        .then(() => {
-          // Redirect to frontend with tokens
-          const redirectUrl = `${
-            process.env.FRONTEND_URL || "http://localhost:5173"
-          }/oauth-success?accessToken=${tokens.accessToken}&refreshToken=${
-            tokens.refreshToken
-          }`;
-          res.redirect(redirectUrl);
+          const frontendUrl =
+            process.env.FRONTEND_URL || "http://localhost:5173";
+
+          if (err.message === "ACCOUNT_DEACTIVATED") {
+            return res.redirect(
+              `${frontendUrl}/login?error=account_deactivated`
+            );
+          }
+
+          if (err.message && err.message.includes("already registered")) {
+            const encodedMessage = encodeURIComponent(err.message);
+            return res.redirect(
+              `${frontendUrl}/login?error=email_exists&message=${encodedMessage}`
+            );
+          }
+
+          return res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+        }
+
+        if (!user) {
+          return res.redirect(
+            `${
+              process.env.FRONTEND_URL || "http://localhost:5173"
+            }/login?error=no_user`
+          );
+        }
+
+        if (user.isActive === false) {
+          return res.redirect(
+            `${
+              process.env.FRONTEND_URL || "http://localhost:5173"
+            }/login?error=account_deactivated`
+          );
+        }
+
+        const tokens = generateTokens(user);
+
+        // Store refresh token
+        User.findByIdAndUpdate(user._id, {
+          refreshToken: tokens.refreshToken,
+          lastLogin: new Date(),
         })
-        .catch((err) => {
-          console.error("Error storing refresh token:", err);
-          res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5173"}/login?error=internal`);
-        });
-    })(req, res, next);
+          .then(() => {
+            const redirectUrl = `${
+              process.env.FRONTEND_URL || "http://localhost:5173"
+            }/oauth-success?accessToken=${tokens.accessToken}&refreshToken=${
+              tokens.refreshToken
+            }`;
+            res.redirect(redirectUrl);
+          })
+          .catch((err) => {
+            console.error("Error storing refresh token:", err);
+            res.redirect(
+              `${
+                process.env.FRONTEND_URL || "http://localhost:5173"
+              }/login?error=internal`
+            );
+          });
+      }
+    )(req, res, next);
   }
 );
 

@@ -500,7 +500,7 @@ const ClusterManagement: React.FC = () => {
             setShowAlert(false);
             setAlertAction(null);
           }}
-          position="center"
+          position="top-center"
         />
       )}
 
