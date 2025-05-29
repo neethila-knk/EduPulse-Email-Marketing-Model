@@ -1,5 +1,3 @@
-// routes/userClustersRouter.ts
-
 import express, { Request, Response } from "express";
 import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
@@ -8,29 +6,21 @@ import { authenticateJWT } from "../middleware/authMiddleware";
 dotenv.config();
 const router = express.Router();
 
-// Apply authentication middleware to all routes
 router.use(authenticateJWT);
 
-// Database connection
 const mongoUri = process.env.MONGO_URI!;
 const client = new MongoClient(mongoUri);
 const db = client.db("edudb");
 const clusterCollection = db.collection("clusters");
 
-/**
- * @route   GET /api/user-clusters
- * @desc    Get all active clusters available for users
- * @access  Private
- */
+
 router.get("/", async (req: Request, res: Response): Promise<void> => {
   try {
-    // Check if user exists in request
     if (!req.user) {
       res.status(401).json({ error: "Unauthorized" });
       return;
     }
     
-    // Find only active clusters
     const result = await clusterCollection.find({
       status: "active"
     }).toArray();
@@ -40,11 +30,10 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Transform to the expected format for the frontend select component
     const clusters = result.map((cluster) => ({
       id: cluster._id,
-      value: cluster._id.toString(), // For select dropdown value
-      label: cluster.name, // For select dropdown display
+      value: cluster._id.toString(), 
+      label: cluster.name, 
       count: cluster.size || cluster.emails?.length || 0,
       description: cluster.description || "",
       primaryInterest: cluster.primary_interest || "",
@@ -58,11 +47,6 @@ router.get("/", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-/**
- * @route   GET /api/user-clusters/:id
- * @desc    Get a specific cluster by ID with full details
- * @access  Private
- */
 router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -72,7 +56,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
     
     const clusterId = req.params.id;
     
-    // Validate the cluster ID
+    
     let objectId;
     try {
       objectId = new ObjectId(clusterId);
@@ -81,7 +65,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Find the specific cluster
+    
     const cluster = await clusterCollection.findOne({
       _id: objectId,
       status: "active"
@@ -92,7 +76,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Return the cluster with key information but not the emails
+    
     const clusterDetails = {
       id: cluster._id,
       name: cluster.name,
@@ -112,11 +96,7 @@ router.get("/:id", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-/**
- * @route   GET /api/user-clusters/domains/:id
- * @desc    Get domain distribution for a specific cluster
- * @access  Private
- */
+
 router.get("/domains/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {
@@ -151,11 +131,7 @@ router.get("/domains/:id", async (req: Request, res: Response): Promise<void> =>
   }
 });
 
-/**
- * @route   GET /api/user-clusters/keywords/:id
- * @desc    Get keyword distribution for a specific cluster
- * @access  Private
- */
+
 router.get("/keywords/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     if (!req.user) {

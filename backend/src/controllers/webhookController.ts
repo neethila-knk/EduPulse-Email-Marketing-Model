@@ -2,10 +2,7 @@ import { Request, Response } from "express";
 import { processEmailEvent, SendGridEvent } from "../services/trackingService";
 import Campaign from "../models/Campaign";
 
-/**
- * Handle webhook events from SendGrid
- * These events track email opens, clicks, bounces, etc.
- */
+
 export const handleSendGridWebhook = async (
   req: Request,
   res: Response
@@ -61,13 +58,12 @@ export const handleSendGridWebhook = async (
         }`
       );
 
-      // Skip if missing campaignId
+      
       if (!campaignId) {
         console.log("Skipping event with missing campaignId");
         continue;
       }
 
-      // Skip duplicate sg_message_id in the same webhook batch
       if (messageId && seenMessageIds.has(messageId)) {
         console.log(`Skipping duplicate message ID: ${messageId}`);
         continue;
@@ -112,9 +108,7 @@ export const handleSendGridWebhook = async (
   }
 };
 
-/**
- * Endpoint for testing if SendGrid webhook is accessible
- */
+
 export const testSendGridWebhook = async (
   req: Request,
   res: Response
@@ -132,9 +126,7 @@ export const testSendGridWebhook = async (
   }
 };
 
-/**
- * Optional: Handle click tracking through your own URLs
- */
+
 export const handleClickTracking = async (
   req: Request,
   res: Response

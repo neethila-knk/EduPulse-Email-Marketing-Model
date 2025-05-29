@@ -544,7 +544,7 @@ const UserProfile: React.FC = () => {
                   <ProfileImage
                     initialImage={profileImageUrl}
                     onChange={handleImageChange}
-                    onRemove={confirmImageRemove} // Show confirmation dialog
+                    onRemove={confirmImageRemove} 
                     className="mb-4"
                     disabled={isSubmitting}
                   />

@@ -6,16 +6,16 @@ import { calculateCampaignMetrics } from "../services/trackingService";
 import { getAdminCampaignMetrics, generateCampaignReport } from "../services/adminTrackingService";
 import fs from "fs";
 
-// Get all campaigns (admin access)
+
 export const getAllCampaigns = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    // Query parameters for filtering
+ 
     const { status, userId, fromDate, toDate, search } = req.query;
     
-    // Build filter object
+
     const filter: any = {};
     
     if (status) {
@@ -26,7 +26,7 @@ export const getAllCampaigns = async (
       filter.userId = new ObjectId(userId as string);
     }
     
-    // Date range filtering
+  
     if (fromDate || toDate) {
       filter.createdAt = {};
       
@@ -39,7 +39,7 @@ export const getAllCampaigns = async (
       }
     }
     
-    // Text search
+   
     if (search) {
       const searchRegex = new RegExp(search as string, 'i');
       filter.$or = [
@@ -50,7 +50,7 @@ export const getAllCampaigns = async (
       ];
     }
 
-    // Pagination
+   
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     const skip = (page - 1) * limit;

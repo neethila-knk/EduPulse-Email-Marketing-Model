@@ -19,7 +19,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    // Search campaigns
+  
     const campaignResults = await Campaign.find({
       userId,
       $or: [
@@ -28,7 +28,7 @@ export const globalSearch = async (req: Request, res: Response): Promise<void> =
       ]
     }).limit(5).lean();
 
-    // Combined results
+
     const results = {
       campaigns: campaignResults,
     };

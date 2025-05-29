@@ -3,25 +3,15 @@ import { handleSendGridWebhook, handleClickTracking, testSendGridWebhook } from 
 
 const router = express.Router();
 
-/**
- * SendGrid webhook endpoint for processing email events
- * This should be publicly accessible and configured in SendGrid settings
- * 
- * IMPORTANT: We use express.raw() middleware ONLY for this route
- */
 router.post('/sendgrid', 
-  express.raw({ type: 'application/json' }), // This middleware is crucial!
+  express.raw({ type: 'application/json' }), 
   handleSendGridWebhook
 );
 
-/**
- * GET endpoint for testing webhook URL accessibility
- */
+
 router.get('/sendgrid', testSendGridWebhook);
 
-/**
- * Custom click tracking endpoint
- */
+
 router.get('/click', handleClickTracking);
 
 router.get('/sendgrid', (req, res) => {

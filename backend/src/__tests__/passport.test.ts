@@ -2,27 +2,27 @@ import { Strategy as LocalStrategy } from 'passport-local';
 const mockingoose = require('mockingoose');
 import Admin from '../models/Admin';
 
-// Mock bcryptjs completely
+
 jest.mock('bcryptjs', () => ({
   hash: jest.fn().mockResolvedValue('hashedpassword'),
   compare: jest.fn().mockImplementation((plainText, _hashed) => {
-    // Mock comparison - return true only for known test password
+ 
     return Promise.resolve(plainText === 'test123');
   })
 }));
 
-// Helper to wrap LocalStrategy authenticate for testing
+
 const runLocalStrategy = (
   strategy: LocalStrategy,
   email: string,
   password: string
 ): Promise<any> => {
   return new Promise((resolve) => {
-    // @ts-ignore: internal test structure
+ 
     strategy.success = (user: any) => resolve({ user });
-    // @ts-ignore
+    
     strategy.fail = (_info: any) => resolve({ user: null, info: _info });
-    // @ts-ignore
+ 
     strategy.error = (err: any) => resolve({ error: err });
 
     strategy.authenticate({ body: { email, password } } as any);
@@ -33,12 +33,12 @@ describe('Passport Local Strategy - Admin', () => {
   const mockAdmin = {
     _id: '661d2154f7269a6caa1a7f01',
     email: 'admin@example.com',
-    password: 'hashedpassword', // This matches our mock
+    password: 'hashedpassword', 
     isActive: true,
   };
 
   beforeEach(() => {
-    // Reset all mocks before each test
+   
     jest.clearAllMocks();
   });
 
@@ -75,7 +75,7 @@ describe('Passport Local Strategy - Admin', () => {
     const { user, info, error } = await runLocalStrategy(
       strategy,
       'admin@example.com',
-      'test123' // This matches our mock comparison
+      'test123' 
     );
 
     expect(error).toBeUndefined();
@@ -112,7 +112,7 @@ describe('Passport Local Strategy - Admin', () => {
     const { user, info } = await runLocalStrategy(
       strategy,
       'admin@example.com',
-      'wrongpass' // This won't match our mock comparison
+      'wrongpass' 
     );
 
     expect(user).toBeNull();

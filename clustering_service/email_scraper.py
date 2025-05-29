@@ -305,7 +305,7 @@ def is_valid_email(email):
 
     return True
 
-# ─── email_scraper.py ────────────────────────────────────────────────────────────
+
 def save_emails_to_csv(
     emails_by_keyword: dict[str, list[dict | str]],
     output_file: str = "output/emails.csv",

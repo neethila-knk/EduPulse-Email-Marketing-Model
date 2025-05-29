@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 
-// Define interfaces for token payload and response
+
 interface TokenPayload {
   id: string;
   email: string;
@@ -13,7 +13,7 @@ interface TokenResponse {
   refreshToken: string;
 }
 
-// Generate access token
+
 export const generateAccessToken = (user: any): string => {
   const payload: TokenPayload = {
     id: user._id.toString(),

@@ -3,7 +3,7 @@ import passport from "passport";
 import { verifyAccessToken } from "../utils/jwtUtils";
 import User from "../models/User";
 
-// JWT authentication middleware
+
 export const authenticateJWT = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('jwt', { session: false }, async (err: any, user: any) => {
     if (err) {
@@ -14,7 +14,7 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
       return res.status(401).json({ message: "Unauthorized - Invalid token" });
     }
     
-    // Check if user account is active
+   
     if (user.isActive === false) {
       return res.status(403).json({ 
         message: "Your account has been deactivated. Please contact support for assistance.",
@@ -27,10 +27,10 @@ export const authenticateJWT = (req: Request, res: Response, next: NextFunction)
   })(req, res, next);
 };
 
-// Session-based authentication (keep for backwards compatibility)
+
 export const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
   if (req.isAuthenticated()) {
-    // Check if user is active
+
     const user = req.user as any;
     if (user && user.isActive === false) {
       return res.status(403).json({ 
@@ -43,7 +43,7 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
   res.status(401).json({ message: "Unauthorized" });
 };
 
-// Manual JWT verification from Authorization header (alternative to passport-jwt)
+
 export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
   
@@ -58,7 +58,7 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
   
-  // Check if user is active
+
   User.findById(payload.id)
     .then(user => {
       if (!user) {
@@ -72,7 +72,7 @@ export const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
         });
       }
       
-      // Attach user info to request
+    
       req.user = user as Express.User;
 
       next();

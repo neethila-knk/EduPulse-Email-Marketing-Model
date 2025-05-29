@@ -12,13 +12,17 @@ import {
 } from "../middleware/adminAuthMiddleware";
 import bcrypt from "bcryptjs";
 import User from "../models/User";
-import { getDashboardStats, getNodeHealth, getRecentActivity, getSystemStatus } from "../controllers/adminController";
+import {
+  getDashboardStats,
+  getNodeHealth,
+  getRecentActivity,
+  getSystemStatus,
+} from "../controllers/adminController";
 import adminCampaignRoutes from "./adminCampaignRoutes";
 
 const router = express.Router();
 
-// Create admin - accessible only to super_admin
-// Create admin - accessible only to super_admin
+
 router.post(
   "/admins",
   authenticateAdminJWT,
@@ -27,23 +31,31 @@ router.post(
     try {
       const { username, email, password } = req.body;
 
-      // Sanitize: Force role to "admin" (prevent frontend override)
+      
       const role = "admin";
 
-      // Check if email or username already exists
-      const existingAdmin = await Admin.findOne({ $or: [{ email }, { username }] });
+      
+      const existingAdmin = await Admin.findOne({
+        $or: [{ email }, { username }],
+      });
       if (existingAdmin) {
         res.status(409).json({
           message: "An admin with this email or username already exists.",
           errors: {
-            email: existingAdmin.email === email ? "Email already exists" : undefined,
-            username: existingAdmin.username === username ? "Username already exists" : undefined,
-          }
+            email:
+              existingAdmin.email === email
+                ? "Email already exists"
+                : undefined,
+            username:
+              existingAdmin.username === username
+                ? "Username already exists"
+                : undefined,
+          },
         });
         return;
       }
 
-      // Create and save the admin
+    
       const newAdmin = new Admin({ username, email, password, role });
       await newAdmin.save();
 
@@ -66,14 +78,13 @@ router.post(
   }
 );
 
-
 // Admin login route
 
 router.post("/login", async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    // Validate inputs
+
     if (!email || !password) {
       res.status(400).json({
         message: "Email and password are required",
@@ -85,7 +96,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Find admin by email
+
     const admin = await Admin.findOne({ email });
     if (!admin) {
       res.status(401).json({
@@ -97,7 +108,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Check if admin account is active
+    
     if (admin.isActive === false) {
       res.status(403).json({
         message:
@@ -110,7 +121,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Compare passwords
+  
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       res.status(401).json({
@@ -122,10 +133,10 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // Generate JWT tokens
+    
     const tokens = generateAdminTokens(admin);
 
-    // Store refresh token and update last login
+  
     admin.refreshToken = tokens.refreshToken;
     admin.lastLogin = new Date();
     await admin.save();
@@ -137,7 +148,7 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
         id: admin.id,
         username: admin.username,
         email: admin.email,
-        role: admin.role  // Make sure to include this!
+        role: admin.role, 
       },
     });
     return;
@@ -156,7 +167,7 @@ router.get(
   authenticateAdminJWT,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // Use type assertion to access _id safely
+    
       if (req.user) {
         await Admin.findByIdAndUpdate((req.user as any)._id, {
           refreshToken: null,
@@ -178,7 +189,7 @@ router.get(
   }
 );
 
-// Admin refresh token route
+
 router.post(
   "/refresh-token",
   async (req: Request, res: Response): Promise<void> => {
@@ -192,7 +203,7 @@ router.post(
         return;
       }
 
-      // Verify the refresh token
+      
       const payload = verifyAdminRefreshToken(refreshToken);
       if (!payload) {
         res.status(401).json({
@@ -201,7 +212,7 @@ router.post(
         return;
       }
 
-      // Find admin and check if refresh token matches
+      
       const admin = await Admin.findById(payload.id);
       if (!admin || admin.refreshToken !== refreshToken) {
         res.status(401).json({
@@ -210,7 +221,7 @@ router.post(
         return;
       }
 
-      // Generate new access token
+     
       const accessToken = generateAdminAccessToken(admin);
 
       res.status(200).json({ accessToken });
@@ -225,7 +236,7 @@ router.post(
   }
 );
 
-// Get current admin (protected route)
+
 router.get(
   "/me",
   authenticateAdminJWT,
@@ -236,7 +247,7 @@ router.get(
         return;
       }
 
-      // Use type assertion to access _id safely
+     
       const admin = await Admin.findById((req.user as any)._id).select(
         "-password -refreshToken"
       );
@@ -264,11 +275,7 @@ router.get(
   }
 );
 
-/**
- * @route   PUT /api/admin/users/:id/block
- * @desc    Block or unblock a user
- * @access  Admin
- */
+
 router.put(
   "/users/:id/block",
   authenticateAdminJWT,
@@ -277,7 +284,7 @@ router.put(
       const userId = req.params.id;
       const { isActive } = req.body;
 
-      // Ensure isActive is a boolean
+     
       if (typeof isActive !== "boolean") {
         res.status(400).json({
           message: "isActive must be a boolean value",
@@ -285,7 +292,7 @@ router.put(
         return;
       }
 
-      // Find and update the user
+     
       const user = await User.findByIdAndUpdate(
         userId,
         { isActive: isActive },
@@ -315,17 +322,13 @@ router.put(
   }
 );
 
-/**
- * @route   GET /api/admin/users
- * @desc    Get all users
- * @access  Admin
- */
+
 router.get(
   "/users",
   authenticateAdminJWT,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get only the fields we need for display
+      
       const users = await User.find(
         {},
         {
@@ -352,11 +355,8 @@ router.get(
   }
 );
 
-/**
- * @route   GET /api/admin/users/:id
- * @desc    Get user by ID
- * @access  Admin
- */
+
+
 router.get(
   "/users/:id",
   authenticateAdminJWT,
@@ -385,11 +385,7 @@ router.get(
   }
 );
 
-/**
- * @route   DELETE /api/admin/users/:id
- * @desc    Delete a user
- * @access  Admin
- */
+
 router.delete(
   "/users/:id",
   authenticateAdminJWT,
@@ -427,10 +423,11 @@ router.delete(
  */
 router.get(
   "/admins",
-  authenticateAdminJWT, isSuperAdmin,
+  authenticateAdminJWT,
+  isSuperAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get all admins but exclude sensitive fields
+    
       const admins = await Admin.find(
         {},
         {
@@ -438,7 +435,7 @@ router.get(
           email: 1,
           createdAt: 1,
           lastLogin: 1,
-          isActive: 1, // Include active status
+          isActive: 1, 
         }
       ).sort({ createdAt: -1 });
 
@@ -455,36 +452,33 @@ router.get(
   }
 );
 
-/**
- * @route   PUT /api/admin/admins/:id/block
- * @desc    Block/Unblock an admin
- * @access  Admin
- */
+
 router.put(
   "/admins/:id/block",
-  authenticateAdminJWT,isSuperAdmin,
+  authenticateAdminJWT,
+  isSuperAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const adminId = req.params.id;
       const { isActive } = req.body;
 
-      // Get the current admin (the one making the request)
+      
       const currentAdmin = await Admin.findById((req.user as any)._id);
 
-      // Check if admin exists
+      
       const targetAdmin = await Admin.findById(adminId);
       if (!targetAdmin) {
         res.status(404).json({ message: "Admin not found" });
         return;
       }
 
-      // Prevent admin from blocking themselves
+     
       if (adminId === (req.user as any)._id.toString()) {
         res.status(400).json({ message: "You cannot block yourself" });
         return;
       }
 
-      // Update admin status
+      
       const updatedAdmin = await Admin.findByIdAndUpdate(
         adminId,
         { isActive: isActive },
@@ -509,11 +503,7 @@ router.put(
   }
 );
 
-/**
- * @route   PUT /api/admin/admins/:id/password
- * @desc    Update admin password
- * @access  Admin
- */
+
 router.put(
   "/admins/:id/password",
   authenticateAdminJWT,
@@ -535,7 +525,7 @@ router.put(
         return;
       }
 
-      // ✅ Always require and validate currentPassword
+      
       if (!currentPassword) {
         res.status(400).json({ message: "Current password is required" });
         return;
@@ -547,7 +537,7 @@ router.put(
         return;
       }
 
-      // ✅ Update password
+      
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(newPassword, salt);
       await Admin.findByIdAndUpdate(adminId, { password: hashedPassword });
@@ -564,32 +554,28 @@ router.put(
 );
 
 
-/**
- * @route   DELETE /api/admin/admins/:id
- * @desc    Remove an admin
- * @access  Admin
- */
 router.delete(
   "/admins/:id",
-  authenticateAdminJWT, isSuperAdmin,
+  authenticateAdminJWT,
+  isSuperAdmin,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const adminId = req.params.id;
 
-      // Prevent admin from deleting themselves
+      
       if (adminId === (req.user as any)._id.toString()) {
         res.status(400).json({ message: "You cannot delete your own account" });
         return;
       }
 
-      // Check if admin exists
+     
       const admin = await Admin.findById(adminId);
       if (!admin) {
         res.status(404).json({ message: "Admin not found" });
         return;
       }
 
-      // Delete admin
+      
       await Admin.findByIdAndDelete(adminId);
 
       res.status(200).json({ message: "Admin removed successfully" });
@@ -605,12 +591,10 @@ router.delete(
   }
 );
 
-
 router.get("/dashboard/stats", authenticateAdminJWT, getDashboardStats);
-router.get("/dashboard/stats",authenticateAdminJWT, getDashboardStats);
+router.get("/dashboard/stats", authenticateAdminJWT, getDashboardStats);
 router.get("/dashboard/activity", authenticateAdminJWT, getRecentActivity);
 router.get("/status", authenticateAdminJWT, getSystemStatus);
 router.get("/health", getNodeHealth);
-
 
 export default router;
