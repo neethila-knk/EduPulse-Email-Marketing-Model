@@ -1,13 +1,13 @@
-// models/EmailExtractionJob.ts
+
 import mongoose, { Document, Schema } from 'mongoose';
 
-// Define the interface for email results
+
 export interface EmailResult {
   Email: string;
   'Keyword Category': string;
 }
 
-// Define the interface for the document
+
 export interface IEmailExtractionJob extends Document {
   keywords: string;
   category: string;
@@ -25,7 +25,7 @@ export interface IEmailExtractionJob extends Document {
   _id: mongoose.Types.ObjectId;
 }
 
-// Create the schema
+
 const EmailExtractionJobSchema = new Schema<IEmailExtractionJob>(
   {
     keywords: {
@@ -73,14 +73,14 @@ const EmailExtractionJobSchema = new Schema<IEmailExtractionJob>(
     },
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'Admin', // Changed from 'User' to 'Admin' to match your system
+      ref: 'Admin', 
       required: true,
     },
   },
   { timestamps: true }
 );
 
-// Create and export the model
+
 const EmailExtractionJob = mongoose.model<IEmailExtractionJob>('EmailExtractionJob', EmailExtractionJobSchema);
 
 export default EmailExtractionJob;

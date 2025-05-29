@@ -25,7 +25,7 @@ const visualizationCollection = db.collection("visualizations");
 const clusterCollection = db.collection("clusters");
 const universityCollection = db.collection("university_clusters");
 
-// Helper function to create a dataset record
+
 async function createDatasetRecord(
   fileName: string,
   totalEmails: number,
@@ -48,7 +48,7 @@ async function createDatasetRecord(
   }
 }
 
-// Function to extract emails from CSV file
+
 function extractEmailsFromCSV(
   filePath: string
 ): Promise<{ emails: string[]; records: any[] }> {
@@ -73,36 +73,35 @@ function extractEmailsFromCSV(
   });
 }
 
-// Function to filter out existing emails
+
 async function filterExistingEmails(csvRecords: any[]): Promise<{
   newRecords: any[];
   existingCount: number;
   existingEmails: string[];
 }> {
-  // Get ALL emails from the database first
+  
   const allExistingEmails = await emailCollection
     .find({}, { projection: { _id: 0, Email: 1 } })
     .toArray();
 
-  // Create a set of normalized emails with aggressive cleaning
+  
   const existingEmailsSet = new Set<string>();
   for (const doc of allExistingEmails) {
-    // Super aggressive normalization
+   
     const normalizedEmail = doc.Email.toLowerCase()
       .trim()
-      .normalize("NFKC") // Normalize Unicode
-      .replace(/\s+/g, ""); // Remove ALL whitespace
+      .normalize("NFKC") 
+      .replace(/\s+/g, "");
     existingEmailsSet.add(normalizedEmail);
   }
 
   console.log(`Total emails in database: ${existingEmailsSet.size}`);
 
-  // Find which emails are considered "new"
   const newRecords: any[] = [];
   const debugInfo: any[] = [];
 
   for (const record of csvRecords) {
-    // Apply the same aggressive normalization
+    
     const normalizedEmail = record.Email.toLowerCase()
       .trim()
       .normalize("NFKC")
@@ -111,7 +110,7 @@ async function filterExistingEmails(csvRecords: any[]): Promise<{
     if (!existingEmailsSet.has(normalizedEmail)) {
       newRecords.push(record);
 
-      // Log detailed information about the "new" email for debugging
+      
       debugInfo.push({
         original: record.Email,
         normalized: normalizedEmail,
@@ -120,13 +119,13 @@ async function filterExistingEmails(csvRecords: any[]): Promise<{
     }
   }
 
-  // Log the problematic emails
+
   if (newRecords.length > 0) {
     console.log("Emails detected as new that should be existing:");
     console.log(JSON.stringify(debugInfo, null, 2));
   }
 
-  // Fix for the second error: properly type the Array.from conversion
+ 
   const existingEmails: string[] = Array.from(existingEmailsSet.values());
 
   return {
@@ -136,7 +135,7 @@ async function filterExistingEmails(csvRecords: any[]): Promise<{
   };
 }
 
-// Function to save CSV with only new records
+
 async function saveFilteredCSV(
   records: any[],
   filePath: string
@@ -150,10 +149,10 @@ async function saveFilteredCSV(
     const newFilePath = `${filePath}_filtered`;
     const headers = Object.keys(records[0]).join(",") + "\n";
 
-    // Write headers
+
     fs.writeFileSync(newFilePath, headers);
 
-    // Write each record
+
     records.forEach((record) => {
       const row = Object.values(record)
         .map((val) =>
@@ -168,7 +167,7 @@ async function saveFilteredCSV(
   });
 }
 
-// Modified route to handle new upload approach
+
 router.post(
   "/cluster-emails",
   upload.single("file"),
@@ -355,7 +354,7 @@ router.post(
         );
       }
 
-      // ✅ Reinsert university cluster logic
+   
       let universityDataInserted = false;
 
       if (
@@ -470,14 +469,14 @@ router.get("/available-clusters", async (_req: Request, res: Response) => {
     const result = await clusterCollection.find().toArray();
 
     if (result.length === 0) {
-      // Fallback to old method of aggregation if no explicit clusters exist
+      
       const oldResult = await emailCollection
         .aggregate([
           {
             $group: {
               _id: "$cluster_name",
               count: { $sum: 1 },
-              // Get a representative email for debugging purposes
+              
               sampleEmail: { $first: "$Email" },
             },
           },
@@ -485,11 +484,11 @@ router.get("/available-clusters", async (_req: Request, res: Response) => {
         ])
         .toArray();
 
-      // Transform to the expected format
+      
       const clusters = oldResult.map((r) => ({
         name: r._id,
         count: r.count,
-        // Include sample data for admin debugging
+       
         sample: r.sampleEmail ? r.sampleEmail.split("@")[1] : "unknown",
       }));
 
@@ -497,16 +496,16 @@ router.get("/available-clusters", async (_req: Request, res: Response) => {
       return;
     }
 
-    // Transform to the expected format
+   
     const clusters = result.map((cluster) => ({
       name: cluster.name,
       count: cluster.size,
       id: cluster._id,
       cluster_id: cluster.cluster_id,
 
-      emails: cluster.emails || [], // 👈 include this
+      emails: cluster.emails || [], 
       status: cluster.status || "active",
-      // Get domain distribution as a string for display
+      
       sample: Object.keys(cluster.domain_distribution || {})[0] || "mixed",
     }));
 
@@ -526,12 +525,12 @@ router.get(
       const result = await universityCollection.find().toArray();
 
       if (result.length === 0) {
-        // Return empty array if no university clusters exist
+       
         res.json([]);
         return;
       }
 
-      // Transform if needed
+
       const universityClusters = result.map((uc) => ({
         university: uc.university,
         count: uc.count,
@@ -548,7 +547,7 @@ router.get(
   }
 );
 
-// Modified API endpoint to fix cluster email retrieval
+
 router.get(
   "/cluster-emails/:cluster_name",
   async (req: Request, res: Response): Promise<void> => {
@@ -556,7 +555,7 @@ router.get(
       const clusterName = req.params.cluster_name;
       console.log(`Fetching emails for cluster: ${clusterName}`);
 
-      // First, find the cluster in the clusters collection to get the cluster_id
+      
       const clusterInfo = await clusterCollection.findOne({
         name: clusterName,
       });
@@ -571,7 +570,7 @@ router.get(
       let query = {};
 
       if (clusterInfo) {
-        // If we found the cluster, use its ID for the query
+       
         query = {
           $or: [
             { cluster_id: clusterInfo.cluster_id },
@@ -581,7 +580,7 @@ router.get(
           ],
         };
       } else {
-        // Fall back to just using the name
+       
         query = {
           $or: [
             { cluster_name: clusterName },
@@ -592,7 +591,7 @@ router.get(
 
       console.log("Query:", JSON.stringify(query));
 
-      // Try to find emails for this cluster
+    
       const emails = await emailCollection
         .find(query, {
           projection: {
@@ -607,7 +606,7 @@ router.get(
 
       console.log(`Found ${emails.length} emails for cluster ${clusterName}`);
 
-      // Even if we find 0 emails, return an empty array
+    
       res.json(emails);
     } catch (error) {
       console.error("Error fetching emails:", error);
@@ -648,7 +647,7 @@ router.get("/cluster-stats", async (_req: Request, res: Response) => {
 
 router.get("/visualization-data", async (_req: Request, res: Response) => {
   try {
-    // Get the most recent visualization data
+    
     const visualizationData = await visualizationCollection.findOne(
       {},
       { sort: { createdAt: -1 } }
@@ -659,10 +658,10 @@ router.get("/visualization-data", async (_req: Request, res: Response) => {
       return;
     }
 
-    console.log("📊 Found visualization data:", visualizationData._id);
-    console.log("📊 Data keys:", Object.keys(visualizationData.data || {}));
+    console.log("Found visualization data:", visualizationData._id);
+    console.log("Data keys:", Object.keys(visualizationData.data || {}));
     console.log(
-      "📊 tsne_data present:",
+      "tsne_data present:",
       visualizationData.data && !!visualizationData.data.tsne_data
     );
 
@@ -677,13 +676,13 @@ router.get(
   "/cluster-details/:cluster_id",
   async (req: Request, res: Response) => {
     try {
-      // Try finding by MongoDB ObjectId first
+ 
       let cluster;
       try {
         const objectId = new ObjectId(req.params.cluster_id);
         cluster = await clusterCollection.findOne({ _id: objectId });
       } catch (e) {
-        // If not a valid ObjectId, try finding by numeric cluster_id
+        
         const clusterId = parseInt(req.params.cluster_id);
         if (!isNaN(clusterId)) {
           cluster = await clusterCollection.findOne({ cluster_id: clusterId });
@@ -748,7 +747,7 @@ router.put("/clusters/:id", async (req: Request, res: Response) => {
 
     const objectId = new ObjectId(clusterId);
 
-    // Update only the fields that are allowed to be changed
+   
     await clusterCollection.updateOne(
       { _id: objectId },
       {
@@ -768,7 +767,7 @@ router.put("/clusters/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Update cluster status (archive/activate)
+
 router.patch(
   "/clusters/:id",
   async (req: Request, res: Response): Promise<void> => {
@@ -776,7 +775,7 @@ router.patch(
       const { status } = req.body;
       const clusterId = req.params.id;
 
-      // Validate status
+ 
       if (!["active", "archived", "draft"].includes(status)) {
         res.status(400).json({ error: "Invalid status value." });
         return;

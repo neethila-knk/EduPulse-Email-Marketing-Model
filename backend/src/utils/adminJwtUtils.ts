@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-// Define interfaces for token payload and response
 interface TokenPayload {
   id: string;
   email: string;
@@ -13,7 +12,6 @@ interface TokenResponse {
   refreshToken: string;
 }
 
-// Generate access token for admin
 export const generateAdminAccessToken = (admin: any): string => {
   const payload: TokenPayload = {
     id: admin._id.toString(),
@@ -25,11 +23,10 @@ export const generateAdminAccessToken = (admin: any): string => {
   return jwt.sign(
     payload, 
     process.env.ADMIN_JWT_ACCESS_SECRET || process.env.JWT_ACCESS_SECRET || 'admin_fallback_jwt_secret', 
-    { expiresIn: '1h' } // Longer timeout for admins
+    { expiresIn: '1h' } 
   );
 };
 
-// Generate refresh token for admin
 export const generateAdminRefreshToken = (admin: any): string => {
   const payload: TokenPayload = {
     id: admin._id.toString(),
@@ -45,7 +42,7 @@ export const generateAdminRefreshToken = (admin: any): string => {
   );
 };
 
-// Generate both tokens for admin
+
 export const generateAdminTokens = (admin: any): TokenResponse => {
   return {
     accessToken: generateAdminAccessToken(admin),
@@ -53,7 +50,7 @@ export const generateAdminTokens = (admin: any): TokenResponse => {
   };
 };
 
-// Verify admin access token
+
 export const verifyAdminAccessToken = (token: string): TokenPayload | null => {
   try {
     const payload = jwt.verify(
@@ -61,7 +58,7 @@ export const verifyAdminAccessToken = (token: string): TokenPayload | null => {
       process.env.ADMIN_JWT_ACCESS_SECRET || process.env.JWT_ACCESS_SECRET || 'admin_fallback_jwt_secret'
     ) as TokenPayload;
     
-    // Ensure the token is for an admin
+
     if (!payload.isAdmin) {
       return null;
     }
@@ -72,7 +69,7 @@ export const verifyAdminAccessToken = (token: string): TokenPayload | null => {
   }
 };
 
-// Verify admin refresh token
+
 export const verifyAdminRefreshToken = (token: string): TokenPayload | null => {
   try {
     const payload = jwt.verify(
@@ -80,7 +77,7 @@ export const verifyAdminRefreshToken = (token: string): TokenPayload | null => {
       process.env.ADMIN_JWT_REFRESH_SECRET || process.env.JWT_REFRESH_SECRET || 'admin_fallback_refresh_secret'
     ) as TokenPayload;
     
-    // Ensure the token is for an admin
+   
     if (!payload.isAdmin) {
       return null;
     }

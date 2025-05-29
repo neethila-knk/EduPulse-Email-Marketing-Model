@@ -12,9 +12,9 @@ import "./config/passport";
 import clusteringRoutes from "./routes/clusteringRoutes";
 import adminAuthRoutes from "./routes/adminAuth";
 import userClustersRouter from "./routes/userClustersRouter";
-import campaignRoutes from "./routes/campaignRoutes"; // Import campaign routes
-import webhookRoutes from "./routes/webhookRoutes"; // Import webhook routes
-// Import and initialize email queue worker
+import campaignRoutes from "./routes/campaignRoutes"; 
+import webhookRoutes from "./routes/webhookRoutes"; 
+
 import './services/emailQueueService';
 console.log('Email queue worker initialized');
 import emailSettingsRoutes from './routes/emailSettingsRoutes';
@@ -32,7 +32,7 @@ connectDB();
 
 const app = express();
 
-// Webhook routes (no authentication needed for external webhooks)
+
 app.use('/api/webhooks', webhookRoutes);
 
 
@@ -41,11 +41,11 @@ app.use(express.json());
 app.use(cors({ 
   origin: process.env.FRONTEND_URL || "http://localhost:5173", 
   credentials: true,
-  // Add exposing headers for OAuth token cookies
+
   exposedHeaders: ["Set-Cookie"],
 }));
 
-// Improved session configuration
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET as string,
@@ -55,7 +55,7 @@ app.use(
       mongoUrl: process.env.MONGO_URI,
       collectionName: 'sessions',
       autoRemove: 'native',
-      // Improved serialization
+      
       serialize: (session) => {
         if (!session || !session.passport) {
           return {};
@@ -64,9 +64,9 @@ app.use(
       }
     }),
     cookie: { 
-      secure: process.env.NODE_ENV === 'production', // Secure in production
+      secure: process.env.NODE_ENV === 'production', 
       httpOnly: true, 
-      maxAge: 24 * 60 * 60 * 1000, // 1 day 
+      maxAge: 24 * 60 * 60 * 1000, 
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     },
   })
@@ -103,31 +103,30 @@ app.use("/admin", adminAuthRoutes);
 // Register admin campaign routes
 app.use("/admin", adminCampaignRoutes);
 
-app.use('/api/admin', adminAuthRoutes); // User management routes
+app.use('/api/admin', adminAuthRoutes); 
 app.use("/api/search", searchRoutes);
 app.use("/api/notifications", notificationRoutes);
 
 
-// User clusters routes (these already have authentication middleware applied in the router)
+
 app.use("/api/user-clusters", userClustersRouter);
 
-// Campaign routes for email sending
+
 app.use("/api/campaigns", campaignRoutes);
 
 app.use('/api/settings', emailSettingsRoutes);
 
-//emailextraction
-// Email extraction routes
+
 app.use("/api/email-extraction", emailExtractionRoutes);
 
-// Job status update endpoint for FastAPI callbacks
+
 app.use("/api/email-extraction", jobUpdateEndpoint);
 
-// Initialize the email extraction cleanup service
+
 initEmailExtractionCleanup();
 
 
-// Error handling middleware
+
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Server error', message: err.message });
@@ -144,10 +143,9 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
 
-
 //Testing routes
 
-// More detailed SendGrid test endpoint with error details
+
 app.get("/api/test/send-email-detailed", async (req, res): Promise<void> => {
   try {
     const sgMail = require("@sendgrid/mail");

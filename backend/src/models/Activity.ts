@@ -56,26 +56,23 @@ const ActivitySchema: Schema = new Schema({
   },
 });
 
-// Create indexes for faster querying
+
 ActivitySchema.index({ userId: 1, timestamp: -1 });
 ActivitySchema.index({ adminId: 1, timestamp: -1 });
 ActivitySchema.index({ resourceType: 1, resourceId: 1 });
 ActivitySchema.index({ timestamp: -1 });
 
-/**
- * Static method to log an activity
- */
+
 ActivitySchema.statics.logActivity = async function (activityData: Partial<IActivity>) {
   try {
     const activity = new this(activityData);
     return await activity.save();
   } catch (error) {
     console.error("Error logging activity:", error);
-    // Don't throw an error - activity logging should fail gracefully
+  
     return null;
   }
 };
 
-// Create and export the model
 const Activity = mongoose.model<IActivity>("Activity", ActivitySchema);
 export default Activity;

@@ -5,7 +5,6 @@ import mongoose from 'mongoose';
 
 const router = express.Router();
 
-// This endpoint will be called by the FastAPI service to update job status
 router.post('/update-job/:jobId', async (req: Request, res: Response) :Promise<void> => {
   try {
     const { jobId } = req.params;
@@ -16,10 +15,8 @@ router.post('/update-job/:jobId', async (req: Request, res: Response) :Promise<v
       return;
     }
     
-    // Log the update for debugging
     console.log(`Updating job ${jobId} with status: ${updateData.status}, progress: ${updateData.progress}%`);
     
-    // Update job in MongoDB
     const updatedJob = await EmailExtractionJob.findByIdAndUpdate(
       jobId,
       { $set: updateData },
